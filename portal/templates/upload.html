@@ -3,4 +3,9 @@
 {% block content %}
 <h1>Upload Page</h1>
 <hr style="margin-top:0.5rem;">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Upload Excel</button>
+    </form>
 {% endblock %}
