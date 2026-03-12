@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import JsonResponse
-from .models import Document
+
 
 # Create your views here.
 def dashboard(request):
@@ -11,12 +11,39 @@ def upload(request):
     return render(request,"upload.html")
 
 
+from django.http import JsonResponse
+from .models import studentdata
 
-def filter_data(request):
-    query = request.GET.get("q")
+from django.http import JsonResponse
+from .models import studentdata
 
-    results = Document.objects.filter(name__icontains=query)
+def filter_students(request):
 
-    data = list(results.values("id", "name"))
+    center = request.GET.get("center")
+    mode = request.GET.get("mode")
+    caste = request.GET.get("caste")
 
-    return JsonResponse({"results": data})
+    students = studentdata.objects.all()
+
+    if center:
+        students = students.filter(center_name=center)
+
+    if mode:
+        students = students.filter(mode=mode)
+
+    if caste:
+        students = students.filter(caste_category=caste)
+    
+
+    data = list(students.values(
+        "name",
+        "course_name",
+        "center_name",
+        "mode",
+        "caste_category",
+        "trained",
+        "certified",
+        "placed"
+    ))
+
+    return JsonResponse({"results":data})

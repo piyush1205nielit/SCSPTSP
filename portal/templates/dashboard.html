@@ -3,9 +3,65 @@
 {% block content %}
 <h1>Dashboard</h1>
 <hr style="margin-top:0.5rem;">
-<form method="post">
+<div class="filters">
+    <select id="centerFilter">
+    <option value="">All Centers</option>
+    <option value="inderlok">Inderlok</option>
+    <option value="janakpuri">Janakpuri</option>
+    <option value="karkardooma">Karkardooma</option>
+</select>
 
-    <button></button>
-</form>
+<select id="modeFilter">
+    <option value="">All Mode</option>
+    <option value="offline">Offline</option>
+    <option value="online">Online</option>
+</select>
 
+<select id="casteFilter">
+    <option value="">All Caste</option>
+    <option value="OBC">OBC</option>
+    <option value="SC">SC</option>
+    <option value="ST">ST</option>
+    <option value="PWD">PWD</option>
+    <option value="GENERAL">GENERAL</option>
+</select>
+
+
+</div>
+<div id="results"></div>
+
+<script>
+
+function filterStudents(){
+
+let center = document.getElementById("centerFilter").value;
+let mode = document.getElementById("modeFilter").value;
+let caste = document.getElementById("casteFilter").value;
+
+fetch(`/filter-students/?center=${center}&mode=${mode}&caste=${caste}`)
+.then(response => response.json())
+.then(data => {
+
+let results = document.getElementById("results");
+results.innerHTML="";
+
+data.results.forEach(student => {
+
+results.innerHTML += `
+<p>
+${student.name} - ${student.course_name} - ${student.center_name} - ${student.mode}
+</p>
+`;
+
+});
+
+});
+
+}
+
+document.getElementById("centerFilter").addEventListener("change", filterStudents);
+document.getElementById("modeFilter").addEventListener("change", filterStudents);
+document.getElementById("casteFilter").addEventListener("change", filterStudents);
+
+</script>
 {% endblock content %}
