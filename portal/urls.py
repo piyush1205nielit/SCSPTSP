@@ -4,5 +4,6 @@ from portal import views
 
 urlpatterns = [
     path('',views.dashboard,name="dashboard"),
-    path("/upload",views.upload,name="upload")
+    path("/upload",views.upload,name="upload"),
+    path("filter-students/", views.filter_students, name="filter_students")
 ]

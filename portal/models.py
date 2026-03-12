@@ -18,13 +18,13 @@ class studentdata(models.Model):
         ("janakpuri","janakpuri"),
         ("karkardooma","karkardooma")
     ]
-    session=models.CharField(max_length=20)
+    session=models.DateField()
     name=models.CharField(max_length=30)
     course_name=models.CharField(max_length=50)
     course_hour=models.PositiveIntegerField()
     scheme=models.CharField(max_length=50)
     mode=models.CharField(max_length=10,choices=mode)
-    caste_category=models.CharField(max_length=10)
+    caste_category=models.CharField(max_length=10,choices=caste)
     center_name=models.CharField(max_length=30,choices=centers)
     trained=models.BooleanField(default=False)
     certified=models.BooleanField(default=False)

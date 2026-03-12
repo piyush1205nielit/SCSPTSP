@@ -1,10 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import JsonResponse
-import pandas as pd
-from django.shortcuts import render, redirect
-from .forms import ExcelUploadForm, StudentDataForm
-from .models import studentdata
+from .models import Document
 
 # Create your views here.
 def dashboard(request):
@@ -49,8 +46,8 @@ def upload(request):
 def filter_data(request):
     query = request.GET.get("q")
 
-    results = studentdata.objects.filter(name__icontains=query)
+    results = Document.objects.filter(name__icontains=query)
 
     data = list(results.values("id", "name"))
 
-    return JsonResponse({"results": data})
+    return JsonResponse({"results":data})
