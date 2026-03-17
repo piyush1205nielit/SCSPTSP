@@ -35,24 +35,34 @@
     width: 100%;
     flex-direction: column;
     overflow: hidden;
+      transition: all 0.3s ease;
 }
 
 .left-nav > .ul > li > a {
     text-decoration: none;
-    color: rgb(33, 103, 254);
-    border-bottom: 1px solid rgba(128, 128, 128, 0.466);
+    color: rgb(0, 0, 0);
+    border-bottom: 2px inset rgba(128, 128, 128, 0.466);
     font-size: 1rem;
     display: block;
     font-weight: 500;
     width: 100%;
     padding: 1rem;
+    transition: all 0.3s ease;
+   
 }
 
 .left-nav > .ul > li > a:hover {
-    background-color: rgb(33, 103, 254);
+    background-color: rgba(224, 224, 224, 0.881);
+    transform: translateX(3px);
+    transform: translateY(3px);
+}
+.active{
+    background-color: rgba(180, 182, 185, 0.708);
     color: white;
 }
-
+.ct{
+    color:white;
+}
 .right-div {
     width: 76%;
     height: 100%;

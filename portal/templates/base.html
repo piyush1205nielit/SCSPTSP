@@ -14,21 +14,37 @@
         <div class="hero">
             <div class="left-nav">
                 <div class="ul">
-                    <li><a href="{% url "dashboard" %}">Dashboard</a></li>
-                    <li><a href="{% url "upload" %}">Upload</a></li>
-                
-                    <li><a href="{% url "download" %}">Download</a></li>
+                    <li class="libtn {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <a href="{% url 'dashboard' %}" class="at">Dashboard</a>
+                    </li>
+
+                    <li class="libtn {% if request.resolver_match.url_name == 'upload' %}active{% endif %}">
+                        <a href="{% url 'upload' %}" class="at">Upload</a>
+                    </li>
+
+                    <li class="libtn {% if request.resolver_match.url_name == 'download' %}active{% endif %}">
+                        <a href="{% url 'download' %}" class="at">Download</a>
+                    </li>
                     {% if user.is_authenticated %}
                         <li><a href="{% url 'logout' %}" class="logout">Logout</a></li>
                     {% endif %}
                 </div>
             </div>
-            <div class="right-div">
+            <div class="right-div" style="overflow-y:scroll;">
                 {% block content %}
                 {% endblock content %}
             </div>
         </div>
         </div>
     </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            $(".libtn").click(function(){
+                $(".libtn").removeClass("active")
+                $(this).addClass("active")
+            })
+        })
+    </script>
 </body>
 </html>
