@@ -43,91 +43,111 @@
         <option value="true">Placed</option>
         <option value="false">Not Placed</option>
     </select>
-    <button onclick="Clear()" class="clear-btn">Clear</button>
+    <select id="schemeFilter">
+    <option value="">All Schemes</option>
+    <option value="PMKVY">PMKVY</option>
+    <option value="DDUGKY">DDUGKY</option>
+    <option value="STRIVE">STRIVE</option>
+</select>
+
+<select id="nsqfFilter">
+    <option value="">All (NSQF)</option>
+    <option value="yes">NSQF</option>
+    <option value="no">Non NSQF</option>
+</select>
+
+    <button onclick="clearFilters()" class="clear-btn">Clear</button>
 </div>
 
-<table border="1" width="100%">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Course</th>
-            <th>Hours</th>
-            <th>Category</th>
-            <th>Center</th>
-            <th>Mode</th>
-            <th>Caste</th>
-            <th>Trained</th>
-            <th>Certified</th>
-            <th>Placed</th>
-        </tr>
-    </thead>
-    <tbody id="results">
-        <!-- Results will be populated here -->
-    </tbody>
-</table>
+<div style="overflow-x: auto;">
+    <table border="1" width="100%">
+        <thead>
+            <tr>
+                <th>Roll No.</th>
+                <th>Name</th>
+                <th>Course</th>
+                <th>Scheme</th>
+                <th>NSQF</th>
+                <th>Hours</th>
+                <th>Category</th>
+                <th>Center</th>
+                <th>Mode</th>
+                <th>Caste</th>
+                <th>Fee</th>
+                <th>Claimable</th>
+                <th>Trained</th>
+                <th>Certified</th>
+                <th>Placed</th>
+                <th>Session</th>
+            </tr>
+        </thead>
+        <tbody id="results">
+            <tr><td colspan="16" style="text-align:center;">Loading...</td></tr>
+        </tbody>
+    </table>
+</div>
 
 <script>
 function filterStudents() {
-    let center = document.getElementById("centerFilter").value;
-    let mode = document.getElementById("modeFilter").value;
-    let caste = document.getElementById("casteFilter").value;
-    let trained = document.getElementById("trainedFilter").value;
-    let certified = document.getElementById("certifiedFilter").value;
-    let placed = document.getElementById("placedFilter").value;
+    const center    = document.getElementById("centerFilter").value;
+    const mode      = document.getElementById("modeFilter").value;
+    const caste     = document.getElementById("casteFilter").value;
+    const trained   = document.getElementById("trainedFilter").value;
+    const certified = document.getElementById("certifiedFilter").value;
+    const placed    = document.getElementById("placedFilter").value;
+    const scheme    = document.getElementById("schemeFilter").value;
+    const nsqf      = document.getElementById("nsqfFilter").value;
 
-    fetch(`/filter-students/?center=${center}&mode=${mode}&caste=${caste}&trained=${trained}&certified=${certified}&placed=${placed}`)
-    .then(response => response.json())
-    .then(data => {
-        let results = document.getElementById("results");
-        results.innerHTML = "";
+    const url = `/filter-students/?center=${center}&mode=${mode}&caste=${caste}&trained=${trained}&certified=${certified}&placed=${placed}&scheme=${scheme}&nsqf=${nsqf}`;
 
-        if (data.results.length === 0) {
-            results.innerHTML = `<tr><td colspan="10" style="text-align: center;">No students found</td></tr>`;
-        } else {
-            data.results.forEach(student => {
-                results.innerHTML += `
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById("results");
+
+            if (data.results.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="16" style="text-align:center;">No students found</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.results.map(s => `
                 <tr>
-                    <td>${student.name}</td>
-                    <td>${student.course_name}</td>
-                    <td>${student.course_hour}</td>
-                    <td>${student.course_category}</td>
-                    <td>${student.center_name}</td>
-                    <td>${student.mode}</td>
-                    <td>${student.caste_category}</td>
-                    <td>${student.trained ? 'Yes' : 'No'}</td>
-                    <td>${student.certified ? 'Yes' : 'No'}</td>
-                    <td>${student.placed ? 'Yes' : 'No'}</td>
+                    <td>${s.roll_number || '-'}</td>
+                    <td>${s.name}</td>
+                    <td>${s.course_name}</td>
+                    <td>${s.scheme || '-'}</td>
+                    <td>${s.nsqf || 'Non NSQF'}</td>
+                    <td>${s.course_hour}</td>
+                    <td>${s.course_category}</td>
+                    <td>${s.center_name}</td>
+                    <td>${s.mode}</td>
+                    <td>${s.caste_category}</td>
+                    <td>₹${s.fee}</td>
+                    <td>₹${s.claimable_amount}</td>
+                    <td>${s.trained_date || 'No'}</td>
+                    <td>${s.certified_date || 'No'}</td>
+                    <td>${s.placed ? 'Yes' : 'No'}</td>
+                    <td>${s.session}</td>
                 </tr>
-                `;
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        let results = document.getElementById("results");
-        results.innerHTML = `<tr><td colspan="10" style="text-align: center; color: red;">Error loading data</td></tr>`;
-    });
+            `).join('');
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            document.getElementById("results").innerHTML =
+                `<tr><td colspan="16" style="text-align:center; color:red;">Error loading data</td></tr>`;
+        });
 }
-function Clear(){
-    document.getElementById("centerFilter").value = "";
-    document.getElementById("modeFilter").value = "";
-    document.getElementById("casteFilter").value = "";
-    document.getElementById("trainedFilter").value = "";
-    document.getElementById("certifiedFilter").value = "";
-    document.getElementById("placedFilter").value = "";
-    
-    // Reload the data with no filters
+
+function clearFilters() {
+    ["centerFilter","modeFilter","casteFilter","trainedFilter",
+     "certifiedFilter","placedFilter","schemeFilter","nsqfFilter"]
+        .forEach(id => document.getElementById(id).value = "");
     filterStudents();
 }
-// Add event listeners to all filters
-document.getElementById("centerFilter").addEventListener("change", filterStudents);
-document.getElementById("modeFilter").addEventListener("change", filterStudents);
-document.getElementById("casteFilter").addEventListener("change", filterStudents);
-document.getElementById("trainedFilter").addEventListener("change", filterStudents);
-document.getElementById("certifiedFilter").addEventListener("change", filterStudents);
-document.getElementById("placedFilter").addEventListener("change", filterStudents);
 
-// Load data on page load
+["centerFilter","modeFilter","casteFilter","trainedFilter",
+ "certifiedFilter","placedFilter","schemeFilter","nsqfFilter"]
+    .forEach(id => document.getElementById(id).addEventListener("change", filterStudents));
 window.onload = filterStudents;
 </script>
 
