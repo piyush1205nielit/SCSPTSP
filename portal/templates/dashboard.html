@@ -10,13 +10,11 @@
         <option value="janakpuri">Janakpuri</option>
         <option value="karkardooma">Karkardooma</option>
     </select>
-
     <select id="modeFilter">
         <option value="">All Mode</option>
         <option value="offline">Offline</option>
         <option value="online">Online</option>
     </select>
-
     <select id="casteFilter">
         <option value="">All Caste</option>
         <option value="OBC">OBC</option>
@@ -25,42 +23,37 @@
         <option value="PWD">PWD</option>
         <option value="GENERAL">GENERAL</option>
     </select>
-
     <select id="trainedFilter">
         <option value="">All (Trained)</option>
         <option value="true">Trained</option>
         <option value="false">Not Trained</option>
     </select>
-
     <select id="certifiedFilter">
         <option value="">All (Certified)</option>
         <option value="true">Certified</option>
         <option value="false">Not Certified</option>
     </select>
-
     <select id="placedFilter">
         <option value="">All (Placed)</option>
         <option value="true">Placed</option>
         <option value="false">Not Placed</option>
     </select>
     <select id="schemeFilter">
-    <option value="">All Schemes</option>
-    <option value="PMKVY">PMKVY</option>
-    <option value="DDUGKY">DDUGKY</option>
-    <option value="STRIVE">STRIVE</option>
-</select>
-
-<select id="nsqfFilter">
-    <option value="">All (NSQF)</option>
-    <option value="yes">NSQF</option>
-    <option value="no">Non NSQF</option>
-</select>
-
+        <option value="">All Schemes</option>
+        <option value="PMKVY">PMKVY</option>
+        <option value="DDUGKY">DDUGKY</option>
+        <option value="STRIVE">STRIVE</option>
+    </select>
+    <select id="nsqfFilter">
+        <option value="">All (NSQF)</option>
+        <option value="yes">NSQF</option>
+        <option value="no">Non NSQF</option>
+    </select>
     <button onclick="clearFilters()" class="clear-btn">Clear</button>
 </div>
 
 <div style="overflow-x: auto;">
-    <table border="1" width="100%">
+    <table>
         <thead>
             <tr>
                 <th>Roll No.</th>
@@ -79,15 +72,100 @@
                 <th>Certified</th>
                 <th>Placed</th>
                 <th>Session</th>
+                <th>Edit</th>
             </tr>
         </thead>
         <tbody id="results">
-            <tr><td colspan="16" style="text-align:center;">Loading...</td></tr>
+            <tr><td colspan="17" style="text-align:center;">Loading...</td></tr>
         </tbody>
     </table>
 </div>
 
+<!-- Edit Modal -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.52);z-index:999;align-items:center;justify-content:center;padding:20px;">
+    <div class="modal-box">
+
+        <div class="modal-header">
+            <div>
+                <div class="modal-header-label">Editing record</div>
+                <div class="modal-header-name" id="modal-title"></div>
+                <div class="modal-header-roll" id="modal-roll"></div>
+            </div>
+            <button class="modal-close" onclick="closeEditModal()">×</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="mfield"><label>Name</label><input id="m_name" class="minput"></div>
+            <div class="mfield"><label>Course name</label><input id="m_course_name" class="minput"></div>
+            <div class="mfield"><label>Scheme</label><input id="m_scheme" class="minput"></div>
+            <div class="mfield"><label>NSQF level</label><input id="m_nsqf" class="minput" placeholder="e.g. Level 4 — blank if Non-NSQF"></div>
+            <div class="mfield"><label>Course hours</label><input id="m_course_hour" class="minput" type="number" min="1"></div>
+            <div class="mfield"><label>Fee (₹)</label><input id="m_fee" class="minput" type="number" min="0"></div>
+            <div class="mfield">
+                <label>Center</label>
+                <select id="m_center" class="minput">
+                    <option value="inderlok">Inderlok</option>
+                    <option value="janakpuri">Janakpuri</option>
+                    <option value="karkardooma">Karkardooma</option>
+                </select>
+            </div>
+            <div class="mfield">
+                <label>Mode</label>
+                <select id="m_mode" class="minput">
+                    <option value="offline">Offline</option>
+                    <option value="online">Online</option>
+                </select>
+            </div>
+            <div class="mfield">
+                <label>Caste</label>
+                <select id="m_caste" class="minput">
+                    <option value="GENERAL">GENERAL</option>
+                    <option value="OBC">OBC</option>
+                    <option value="SC">SC</option>
+                    <option value="ST">ST</option>
+                    <option value="PWD">PWD</option>
+                </select>
+            </div>
+            <div class="mfield"><label>Session</label><input id="m_session" class="minput" placeholder="JAN-2024"></div>
+            <div class="mfield">
+                <label>Trained</label>
+                <select id="m_trained" class="minput">
+                    <option value="false">No</option>
+                    <option value="true">Yes — date auto-set to current month</option>
+                </select>
+            </div>
+            <div class="mfield">
+                <label>Certified</label>
+                <select id="m_certified" class="minput">
+                    <option value="false">No</option>
+                    <option value="true">Yes — date auto-set to current month</option>
+                </select>
+            </div>
+            <div class="mfield">
+                <label>Placed</label>
+                <select id="m_placed" class="minput">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                </select>
+            </div>
+            <div class="mfield">
+                <label>Category <span>(auto)</span></label>
+                <div id="m_category_display" class="minput-auto"></div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button onclick="closeEditModal()" class="btn-secondary btn">Cancel</button>
+            <button onclick="saveModal()" class="btn-primary btn">Save changes</button>
+        </div>
+
+    </div>
+</div>
+
 <script>
+let currentData  = [];
+let editingIndex = null;
+
 function filterStudents() {
     const center    = document.getElementById("centerFilter").value;
     const mode      = document.getElementById("modeFilter").value;
@@ -103,39 +181,136 @@ function filterStudents() {
     fetch(url)
         .then(res => res.json())
         .then(data => {
-            const tbody = document.getElementById("results");
-
-            if (data.results.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="16" style="text-align:center;">No students found</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = data.results.map(s => `
-                <tr>
-                    <td>${s.roll_number || '-'}</td>
-                    <td>${s.name}</td>
-                    <td>${s.course_name}</td>
-                    <td>${s.scheme || '-'}</td>
-                    <td>${s.nsqf || 'Non NSQF'}</td>
-                    <td>${s.course_hour}</td>
-                    <td>${s.course_category}</td>
-                    <td>${s.center_name}</td>
-                    <td>${s.mode}</td>
-                    <td>${s.caste_category}</td>
-                    <td>₹${s.fee}</td>
-                    <td>₹${s.claimable_amount}</td>
-                    <td>${s.trained_date || 'No'}</td>
-                    <td>${s.certified_date || 'No'}</td>
-                    <td>${s.placed ? 'Yes' : 'No'}</td>
-                    <td>${s.session}</td>
-                </tr>
-            `).join('');
+            currentData = data.results;
+            renderTable(currentData);
         })
         .catch(err => {
             console.error('Error:', err);
             document.getElementById("results").innerHTML =
-                `<tr><td colspan="16" style="text-align:center; color:red;">Error loading data</td></tr>`;
+                `<tr><td colspan="17" style="text-align:center;color:red;">Error loading data</td></tr>`;
         });
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById("results");
+    if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="17" style="text-align:center;">No students found</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = data.map((s, i) => displayRow(s, i)).join('');
+}
+
+function displayRow(s, i) {
+    const trainedBadge = s.trained
+        ? `<span class="badge-yes">Yes</span><small>${s.trained_date}</small>`
+        : `<span class="badge-no">No</span>`;
+    const certifiedBadge = s.certified
+        ? `<span class="badge-yes">Yes</span><small>${s.certified_date}</small>`
+        : `<span class="badge-no">No</span>`;
+    const placedBadge = s.placed
+        ? `<span class="badge-yes">Yes</span>`
+        : `<span class="badge-no">No</span>`;
+
+    return `<tr id="row-${i}" data-id="${s.id}">
+        <td>${s.roll_number || '-'}</td>
+        <td>${s.name}</td>
+        <td>${s.course_name}</td>
+        <td>${s.scheme || '-'}</td>
+        <td>${s.nsqf || '<span class="badge-no">Non NSQF</span>'}</td>
+        <td>${s.course_hour}</td>
+        <td>${s.course_category}</td>
+        <td>${s.center_name}</td>
+        <td>${s.mode}</td>
+        <td>${s.caste_category}</td>
+        <td>₹${s.fee}</td>
+        <td>₹${s.claimable_amount}</td>
+        <td>${trainedBadge}</td>
+        <td>${certifiedBadge}</td>
+        <td>${placedBadge}</td>
+        <td>${s.session}</td>
+        <td><button class="edit-btn" onclick="openEditModal(${i})">Edit</button></td>
+    </tr>`;
+}
+
+function openEditModal(i) {
+    editingIndex = i;
+    const s = currentData[i];
+
+    document.getElementById('modal-title').textContent = s.name;
+    document.getElementById('modal-roll').textContent  = s.roll_number || '-';
+    document.getElementById('m_name').value            = s.name;
+    document.getElementById('m_course_name').value     = s.course_name;
+    document.getElementById('m_scheme').value          = s.scheme || '';
+    document.getElementById('m_nsqf').value            = s.nsqf || '';
+    document.getElementById('m_course_hour').value     = s.course_hour;
+    document.getElementById('m_fee').value             = s.fee;
+    document.getElementById('m_center').value          = s.center_name;
+    document.getElementById('m_mode').value            = s.mode;
+    document.getElementById('m_caste').value           = s.caste_category;
+    document.getElementById('m_session').value         = s.session;
+    document.getElementById('m_trained').value         = s.trained   ? 'true' : 'false';
+    document.getElementById('m_certified').value       = s.certified ? 'true' : 'false';
+    document.getElementById('m_placed').value          = s.placed    ? 'true' : 'false';
+    document.getElementById('m_category_display').textContent = s.course_category;
+
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+    editingIndex = null;
+}
+
+function saveModal() {
+    const s = currentData[editingIndex];
+    const payload = {
+        name:           document.getElementById('m_name').value.trim(),
+        course_name:    document.getElementById('m_course_name').value.trim(),
+        scheme:         document.getElementById('m_scheme').value.trim(),
+        nsqf:           document.getElementById('m_nsqf').value.trim(),
+        course_hour:    parseInt(document.getElementById('m_course_hour').value),
+        fee:            parseFloat(document.getElementById('m_fee').value),
+        center_name:    document.getElementById('m_center').value,
+        mode:           document.getElementById('m_mode').value,
+        caste_category: document.getElementById('m_caste').value,
+        session:        document.getElementById('m_session').value.trim(),
+        trained:        document.getElementById('m_trained').value   === 'true',
+        certified:      document.getElementById('m_certified').value === 'true',
+        placed:         document.getElementById('m_placed').value    === 'true',
+    };
+
+    fetch(`/update-student/${s.id}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify(payload),
+    })
+    .then(res => res.json())
+    .then(resp => {
+        if (resp.success) {
+            currentData[editingIndex] = {
+                ...currentData[editingIndex],
+                ...payload,
+                course_category:  resp.course_category,
+                claimable_amount: resp.claimable_amount,
+                trained_date:     resp.trained_date,
+                certified_date:   resp.certified_date,
+            };
+            document.getElementById(`row-${editingIndex}`).outerHTML =
+                displayRow(currentData[editingIndex], editingIndex);
+            closeEditModal();
+        } else {
+            alert('Save failed: ' + (resp.error || 'Unknown error'));
+        }
+    })
+    .catch(err => { console.error(err); alert('Network error.'); });
+}
+
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? match[2] : '';
 }
 
 function clearFilters() {
@@ -148,6 +323,7 @@ function clearFilters() {
 ["centerFilter","modeFilter","casteFilter","trainedFilter",
  "certifiedFilter","placedFilter","schemeFilter","nsqfFilter"]
     .forEach(id => document.getElementById(id).addEventListener("change", filterStudents));
+
 window.onload = filterStudents;
 </script>
 

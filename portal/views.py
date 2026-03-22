@@ -126,6 +126,13 @@ def upload(request):
                             error_count += 1
                             continue
 
+                        trained      = parse_bool_field(row_data.get('trained', False))
+                        certified    = parse_bool_field(row_data.get('certified', False))
+
+                        # auto-set dates from session_label if trained/certified
+                        trained_date   = session_label if trained else ''
+                        certified_date = session_label if certified else ''
+
                         student = studentdata(
                             session=session_label,
                             roll_number=roll_number,
@@ -138,10 +145,13 @@ def upload(request):
                             caste_category=caste,
                             center_name=center,
                             fee=fee,
+                            trained=trained,
                             trained_date=trained_date,
+                            certified=certified,
                             certified_date=certified_date,
-                            placed=placed
+                            placed=placed,
                         )
+
                         student.save()  # course_category and claimable_amount auto-set in model.save()
                         success_count += 1
 
@@ -204,22 +214,25 @@ def filter_students(request):
 
     data = [
     {
-        'name': s.name,
-        'roll_number': s.roll_number,
-        'course_name': s.course_name,
-        'scheme': s.scheme,        # ← this was missing
-        'nsqf': s.nsqf,
-        'course_hour': s.course_hour,
+        'id':              s.id,
+        'roll_number':     s.roll_number,
+        'name':            s.name,
+        'course_name':     s.course_name,
+        'scheme':          s.scheme,
+        'nsqf':            s.nsqf,
+        'course_hour':     s.course_hour,
         'course_category': s.course_category,
-        'center_name': s.center_name,
-        'mode': s.mode,
-        'caste_category': s.caste_category,
-        'fee': float(s.fee),
-        'claimable_amount': float(s.claimable_amount),
-        'trained_date': s.trained_date,
-        'certified_date': s.certified_date,
-        'placed': s.placed,
-        'session': s.session,
+        'center_name':     s.center_name,
+        'mode':            s.mode,
+        'caste_category':  s.caste_category,
+        'fee':             float(s.fee),
+        'claimable_amount':float(s.claimable_amount),
+        'trained':         s.trained,
+        'trained_date':    s.trained_date,
+        'certified':       s.certified,
+        'certified_date':  s.certified_date,
+        'placed':          s.placed,
+        'session':         s.session,
     }
     for s in students
 ]
@@ -327,3 +340,61 @@ def api_download_data(request):
     ]
 
     return JsonResponse({'results': data})
+
+
+import json
+@login_required(login_url='/login')
+def update_student(request, student_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        student = studentdata.objects.get(id=student_id)
+    except studentdata.DoesNotExist:
+        return JsonResponse({'error': 'Student not found'}, status=404)
+
+    from datetime import datetime
+    current_month = datetime.now().strftime('%b').upper() + '-' + datetime.now().strftime('%Y')
+    # e.g. "MAR-2026"
+
+    body = json.loads(request.body)
+
+    student.name           = body.get('name', student.name).strip()
+    student.course_name    = body.get('course_name', student.course_name).strip()
+    student.scheme         = body.get('scheme', student.scheme).strip()
+    student.nsqf           = body.get('nsqf', student.nsqf).strip()
+    student.course_hour    = int(body.get('course_hour', student.course_hour))
+    student.mode           = body.get('mode', student.mode)
+    student.caste_category = body.get('caste_category', student.caste_category)
+    student.center_name    = body.get('center_name', student.center_name)
+    student.fee            = float(body.get('fee', student.fee))
+    student.placed         = body.get('placed', student.placed)
+    student.session        = body.get('session', student.session).strip()
+
+    # trained logic
+    new_trained = body.get('trained', student.trained)
+    if new_trained and not student.trained:
+        # just switched ON — auto-set date
+        student.trained_date = current_month
+    elif not new_trained:
+        # switched OFF — clear date
+        student.trained_date = ''
+    student.trained = new_trained
+
+    # certified logic
+    new_certified = body.get('certified', student.certified)
+    if new_certified and not student.certified:
+        student.certified_date = current_month
+    elif not new_certified:
+        student.certified_date = ''
+    student.certified = new_certified
+
+    student.save()
+
+    return JsonResponse({
+        'success':          True,
+        'course_category':  student.course_category,
+        'claimable_amount': float(student.claimable_amount),
+        'trained_date':     student.trained_date,
+        'certified_date':   student.certified_date,
+    })
