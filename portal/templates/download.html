@@ -4,28 +4,32 @@
 <h2>Download Reports</h2>
 
 <div style="margin:20px 0; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-    <select id="year" style="padding:8px; border:1px solid #ccc; border-radius:4px;">
+    <select id="year" style="padding:8px; border:1px solid #ccc; border-radius:4px;cursor:pointer">
         <option value="">All Years</option>
         {% for y in years %}
         <option value="{{ y }}">{{ y }}</option>
         {% endfor %}
     </select>
 
-    <select id="session" style="padding:8px; border:1px solid #ccc; border-radius:4px;">
+    <select id="session" style="padding:8px; border:1px solid #ccc; border-radius:4px; cursor:pointer">
         <option value="">All Sessions</option>
         {% for s in sessions %}
         <option value="{{ s }}">{{ s }}</option>
         {% endfor %}
     </select>
 
-    <select id="center" style="padding:8px; border:1px solid #ccc; border-radius:4px;">
+    <select id="center" style="padding:8px; border:1px solid #ccc; border-radius:4px; cursor:pointer">
         <option value="">All Centers</option>
         <option value="inderlok">Inderlok</option>
         <option value="janakpuri">Janakpuri</option>
         <option value="karkardooma">Karkardooma</option>
     </select>
 
-    <button onclick="clearFilters()" style="padding:8px 15px; background:#f44336; color:white; border:none; border-radius:4px;">Clear</button>
+    <button onclick="clearFilters()" style="padding:8px 15px; background:#f44336; color:white; border:none; border-radius:4px; cursor:pointer">Clear</button>
+    <div style="margin:2px 0; display:flex; gap:20px; align-items:center;">
+    <button onclick="exportExcel()" style="padding:8px 20px; background:green; color:white; border:none; border-radius:4px; cursor:pointer" >Export Excel</button>
+    <span id="total" style="font-weight:bold;">Total: 0</span>
+</div>
     <span id="loader" style="display:none; color:#1976d2;">Loading...</span>
 </div>
 
@@ -61,10 +65,7 @@
     </table>
 </div>
 
-<div style="margin:20px 0; display:flex; gap:20px; align-items:center;">
-    <button onclick="exportExcel()" style="padding:8px 20px; background:green; color:white; border:none; border-radius:4px;">Export Excel</button>
-    <span id="total" style="font-weight:bold;">Total: 0</span>
-</div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
