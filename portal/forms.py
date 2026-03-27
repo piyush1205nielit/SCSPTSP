@@ -3,10 +3,40 @@ from .models import studentdata
 from datetime import datetime
 
 # ModelForm for studentdata
+from django import forms
+from .models import studentdata
+
 class StudentDataForm(forms.ModelForm):
     class Meta:
         model = studentdata
-        fields = '__all__'
+        fields = [
+            "session", "roll_number", "name", "course_name", 
+            "course_hour", "scheme", "nsqf", "mode", 
+            "caste_category", "center_name", "fee", 
+            "trained", "certified", "placed"
+        ]
+        
+        widgets = {
+            # Date and Text inputs
+            "session": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "roll_number": forms.TextInput(attrs={"class": "form-control", "placeholder": "Enter Roll Number"}),
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Full Name"}),
+            "course_name": forms.TextInput(attrs={"class": "form-control","placeholder": "Enter course name"}),
+            "course_hour": forms.NumberInput(attrs={"class": "form-control","placeholder": "Enter course hours"}),
+            "scheme": forms.TextInput(attrs={"class": "form-control","placeholder": "Enter Scheme"}),
+            "nsqf": forms.TextInput(attrs={"class": "form-control","placeholder": "Enter NSQF"}),
+            "fee": forms.NumberInput(attrs={"class": "form-control","placeholder": "Enter FEE"}),
+
+            # Choice Fields (Dropdowns)
+            "mode": forms.Select(attrs={"class": "form-select"}),
+            "caste_category": forms.Select(attrs={"class": "form-select"}),
+            "center_name": forms.Select(attrs={"class": "form-select"}),
+
+            # Boolean Fields (Checkboxes)
+            "trained": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "certified": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "placed": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
 
 # Simple form to upload Excel
 class ExcelUploadForm(forms.Form):

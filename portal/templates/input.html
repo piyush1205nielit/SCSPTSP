@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <h2 class="fw-bold m-0">Add Student</h2>
+        <p class="text-muted small">Enter the required information to register a new profile.</p>
+    </div>
+
+    <form method="POST" id="student_form" class="border rounded-3 p-4 p-md-5 bg-white" novalidate>
+        {% csrf_token %}
+        
+        <div class="row g-x-5 g-y-4">
+            {% for field in form %}
+                <div class="col-md-6 mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label fw-bold small text-dark mb-1">
+                        {{ field.label }}
+                    </label>
+                    
+                    {# Render the Django input field #}
+                    {{ field }}
+                    
+                    {% if field.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ field.errors|striptags }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4 pt-4 border-top d-flex justify-content-between align-items-center">
+            <span class="text-muted small">* All fields are required unless marked otherwise</span>
+            <div class="d-flex gap-2">
+                <button type="reset" class="btn btn-outline-secondary px-4">Reset</button>
+                <button type="submit" class="btn btn-dark px-5 fw-bold">Add Student</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* Clean, Flat Input Design */
+    input, select, textarea {
+        display: block;
+        width: 100%;
+        padding: 0.6rem 0.85rem;
+        font-size: 0.95rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px; /* Sharper corners for a more formal look */
+        background-color: #fff;
+        transition: border-color 0.2s;
+    }
+
+    /* Simple Focus - No Glow */
+    input:focus {
+        outline: none;
+        border-color: #000;
+        background-color: #f8f9fa;
+    }
+
+    /* Button Styling */
+    .btn-dark {
+        background-color: #000;
+        border: none;
+        border-radius: 4px;
+    }
+
+    .btn-dark:hover {
+        background-color: #333;
+    }
+
+    .btn-outline-secondary {
+        border-radius: 4px;
+    }
+</style>
+{% endblock content %}

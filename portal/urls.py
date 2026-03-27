@@ -11,4 +11,5 @@ urlpatterns = [
     path('download/', views.download, name='download'),
     path('api/download-data/', views.api_download_data, name='api_download_data'),
     path('update-student/<int:student_id>/', views.update_student, name='update_student'),
+    path("input_student/",views.inputView,name="input")
 ]

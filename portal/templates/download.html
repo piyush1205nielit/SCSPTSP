@@ -4,7 +4,8 @@
 <h2>Download Reports</h2>
 
 <div style="margin:20px 0; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-    <select id="year" style="padding:8px; border:1px solid #ccc; border-radius:4px;cursor:pointer">
+    
+    <select id="year" style="padding:8px; border:1px solid #ccc; border-radius:4px; cursor:pointer">
         <option value="">All Years</option>
         {% for y in years %}
         <option value="{{ y }}">{{ y }}</option>
@@ -25,16 +26,23 @@
         <option value="karkardooma">Karkardooma</option>
     </select>
 
-    <button onclick="clearFilters()" style="padding:8px 15px; background:#f44336; color:white; border:none; border-radius:4px; cursor:pointer">Clear</button>
+    <button onclick="clearFilters()" style="padding:8px 15px; background:#f44336; color:white; border:none; border-radius:4px; cursor:pointer">
+        Clear
+    </button>
+
     <div style="margin:2px 0; display:flex; gap:20px; align-items:center;">
-    <button onclick="exportExcel()" style="padding:8px 20px; background:green; color:white; border:none; border-radius:4px; cursor:pointer" >Export Excel</button>
-    <span id="total" style="font-weight:bold;">Total: 0</span>
-</div>
+        <button onclick="exportExcel()" style="padding:8px 20px; background:green; color:white; border:none; border-radius:4px; cursor:pointer">
+            Export Excel
+        </button>
+        <span id="total" style="font-weight:bold;">Total: 0</span>
+    </div>
+
     <span id="loader" style="display:none; color:#1976d2;">Loading...</span>
 </div>
 
 <div style="overflow-x:auto;">
     <table border="1" style="width:100%; border-collapse:collapse; font-size:13px;">
+        
         <thead style="background:#1976d2; color:white;">
             <tr>
                 <th rowspan="2">Category</th>
@@ -58,14 +66,16 @@
                 <th>T</th><th>C</th><th>P</th>
             </tr>
         </thead>
+
         <tbody id="tbody">
-            <tr><td colspan="22" style="text-align:center;">Loading...</td></tr>
+            <tr>
+                <td colspan="22" style="text-align:center;">Loading...</td>
+            </tr>
         </tbody>
+
         <tfoot id="tfoot"></tfoot>
     </table>
 </div>
-
-
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -81,19 +91,28 @@ function loadData() {
     const center  = document.getElementById("center").value;
 
     document.getElementById("loader").style.display = "inline";
-    document.getElementById("tbody").innerHTML = '<tr><td colspan="22" style="text-align:center;">Loading...</td></tr>';
+    document.getElementById("tbody").innerHTML =
+        '<tr><td colspan="22" style="text-align:center;">Loading...</td></tr>';
 
     const url = new URL('/api/download-data/', window.location.origin);
+
     if (year)    url.searchParams.append('year', year);
     if (session) url.searchParams.append('session', session);
     if (center)  url.searchParams.append('center', center);
 
     fetch(url)
-        .then(res => { if (!res.ok) throw new Error('Network error'); return res.json(); })
-        .then(data => { displayData(data.results); document.getElementById("loader").style.display = "none"; })
+        .then(res => {
+            if (!res.ok) throw new Error('Network error');
+            return res.json();
+        })
+        .then(data => {
+            displayData(data.results);
+            document.getElementById("loader").style.display = "none";
+        })
         .catch(err => {
             console.error(err);
-            document.getElementById("tbody").innerHTML = '<tr><td colspan="22" style="text-align:center; color:red;">Error loading data</td></tr>';
+            document.getElementById("tbody").innerHTML =
+                '<tr><td colspan="22" style="text-align:center; color:red;">Error loading data</td></tr>';
             document.getElementById("tfoot").innerHTML = '';
             document.getElementById("total").innerText = 'Total: 0';
             document.getElementById("loader").style.display = "none";
@@ -112,7 +131,6 @@ function displayData(results) {
         return;
     }
 
-    // Group rows
     const groups = {};
     const totals = {
         GENERAL:{t:0,c:0,p:0}, OBC:{t:0,c:0,p:0},
@@ -124,30 +142,38 @@ function displayData(results) {
 
         if (!groups[key]) {
             groups[key] = {
-                cat: row.course_category, course: row.course_name,
-                scheme: row.scheme || '-', nsqf: row.nsqf || '-',
-                hours: row.course_hour, center: row.center_name, session: row.session,
+                cat: row.course_category || '-',
+                course: row.course_name || '-',
+                scheme: row.scheme || '-',   // ✅ FIXED
+                nsqf: row.nsqf || '-',       // ✅ FIXED
+                hours: row.course_hour || '-',
+                center: row.center_name || '-',
+                session: row.session || '-',
                 GENERAL:{t:0,c:0,p:0}, OBC:{t:0,c:0,p:0},
                 SC:{t:0,c:0,p:0}, ST:{t:0,c:0,p:0}, PWD:{t:0,c:0,p:0}
             };
         }
 
         const caste = row.caste_category;
-        if (!groups[key][caste]) return; // unknown caste, skip
+        if (!groups[key][caste]) return;
 
-        // trained_date / certified_date are strings like "JAN-2024" or ""
         if (row.trained_date)   { groups[key][caste].t++; totals[caste].t++; }
         if (row.certified_date) { groups[key][caste].c++; totals[caste].c++; }
         if (row.placed)         { groups[key][caste].p++; totals[caste].p++; }
+
         totals.all++;
     });
 
-    // Build rows
     tbody.innerHTML = Object.values(groups).map(g => `
         <tr>
-            <td>${g.cat}</td><td>${g.course}</td><td>${g.scheme}</td>
-            <td>${g.nsqf}</td><td>${g.hours}</td>
-            <td>${g.center}</td><td>${g.session}</td>
+            <td>${g.cat}</td>
+            <td>${g.course}</td>
+            <td>${g.scheme}</td>
+            <td>${g.nsqf}</td>
+            <td>${g.hours}</td>
+            <td>${g.center}</td>
+            <td>${g.session}</td>
+
             <td>${g.GENERAL.t}</td><td>${g.GENERAL.c}</td><td>${g.GENERAL.p}</td>
             <td>${g.OBC.t}</td><td>${g.OBC.c}</td><td>${g.OBC.p}</td>
             <td>${g.SC.t}</td><td>${g.SC.c}</td><td>${g.SC.p}</td>
@@ -178,7 +204,8 @@ function exportExcel() {
     const table = document.querySelector('table');
     const blob  = new Blob([table.outerHTML], {type: 'application/vnd.ms-excel'});
     const link  = document.createElement('a');
-    link.href   = URL.createObjectURL(blob);
+
+    link.href = URL.createObjectURL(blob);
     link.download = 'report.xls';
     link.click();
 }

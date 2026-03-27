@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    th {
+    cursor: pointer;
+    user-select: none;
+}
+
+th:hover {
+    background-color: rgb(0, 0, 0);
+}
+</style>
 <h2>Student Dashboard</h2>
 
 <div class="filters">
@@ -49,30 +59,37 @@
         <option value="yes">NSQF</option>
         <option value="no">Non NSQF</option>
     </select>
-    <button onclick="clearFilters()" class="clear-btn">Clear</button>
+    <div style="display:flex;">
+    <button onclick="clearFilters()" class="clear-btn" style="margin-right:95px;">Clear</button>
+    
+    <input type="text" id="searchInput" placeholder="Search Name or Roll No..." class="minput" style="width: 300px; display: inline-block;margin-right:10px;">
+    <button onclick="clearFilters()" class="clear-btn" style="background-color:blue;">Find</button>
+    
+    </div>
 </div>
 
 <div style="overflow-x: auto;">
     <table>
         <thead>
             <tr>
-                <th>Roll No.</th>
-                <th>Name</th>
-                <th>Course</th>
-                <th>Scheme</th>
-                <th>NSQF</th>
-                <th>Hours</th>
-                <th>Category</th>
-                <th>Center</th>
-                <th>Mode</th>
-                <th>Caste</th>
-                <th>Fee</th>
-                <th>Claimable</th>
-                <th>Trained</th>
-                <th>Certified</th>
-                <th>Placed</th>
-                <th>Session</th>
-                <th>Edit</th>
+
+    <th onclick="sortTable('roll_number')">Roll No <span id="sort-roll_number"></span></th>
+    <th onclick="sortTable('name')">Name <span id="sort-name"></span></th>
+    <th onclick="sortTable('course_name')">Course <span id="sort-course_name"></span></th>
+    <th onclick="sortTable('scheme')">Scheme <span id="sort-scheme"></span></th>
+    <th onclick="sortTable('nsqf')">NSQF <span id="sort-nsqf"></span></th>
+    <th onclick="sortTable('course_hour')">Hours <span id="sort-course_hour"></span></th>
+    <th onclick="sortTable('course_category')">Category <span id="sort-course_category"></span></th>
+    <th onclick="sortTable('center_name')">Center <span id="sort-center_name"></span></th>
+    <th onclick="sortTable('mode')">Mode <span id="sort-mode"></span></th>
+    <th onclick="sortTable('caste_category')">Caste <span id="sort-caste_category"></span></th>
+    <th onclick="sortTable('fee')">Fee <span id="sort-fee"></span></th>
+    <th onclick="sortTable('claimable_amount')">Claimable <span id="sort-claimable_amount"></span></th>
+    <th onclick="sortTable('trained')">Trained <span id="sort-trained"></span></th>
+    <th onclick="sortTable('certified')">Certified <span id="sort-certified"></span></th>
+    <th onclick="sortTable('placed')">Placed <span id="sort-placed"></span></th>
+    <th onclick="sortTable('session')">Session <span id="sort-session"></span></th>
+    <th>Edit</th>
             </tr>
         </thead>
         <tbody id="results">
@@ -325,6 +342,76 @@ function clearFilters() {
     .forEach(id => document.getElementById(id).addEventListener("change", filterStudents));
 
 window.onload = filterStudents;
+
+
+let sortField = null;
+let sortAsc = true;
+
+function sortTable(field) {
+    if (sortField === field) {
+        sortAsc = !sortAsc;
+    } else {
+        sortField = field;
+        sortAsc = true;
+    }
+
+    // clear all arrows
+    document.querySelectorAll("th span").forEach(el => el.textContent = "");
+
+    // set arrow
+    const arrow = sortAsc ? "▲" : "▼";
+    const indicator = document.getElementById("sort-" + field);
+    if (indicator) indicator.textContent = arrow;
+
+    const sorted = [...currentData].sort((a, b) => {
+        let valA = a[field];
+        let valB = b[field];
+
+        // handle null/undefined
+        if (valA === null || valA === undefined) valA = "";
+        if (valB === null || valB === undefined) valB = "";
+
+        // boolean sorting
+        if (typeof valA === "boolean" && typeof valB === "boolean") {
+            return sortAsc ? (valA - valB) : (valB - valA);
+        }
+
+        // number sorting
+        if (!isNaN(valA) && !isNaN(valB)) {
+            return sortAsc ? valA - valB : valB - valA;
+        }
+
+        // string sorting
+        valA = valA.toString().toLowerCase();
+        valB = valB.toString().toLowerCase();
+
+        if (valA < valB) return sortAsc ? -1 : 1;
+        if (valA > valB) return sortAsc ? 1 : -1;
+        return 0;
+    });
+
+    renderTable(sorted);
+}
+// Trigger search as the user types
+document.getElementById("searchInput").addEventListener("input", function() {
+    const searchTerm = this.value.toLowerCase();
+    
+    // Filter the existing data based on Name or Roll Number
+    const filteredData = currentData.filter(student => {
+        const name = (student.name || "").toLowerCase();
+        const roll = (student.roll_number || "").toString().toLowerCase();
+        return name.includes(searchTerm) || roll.includes(searchTerm);
+    });
+
+    // Re-render the table with results
+    renderTable(filteredData);
+});
+function clearFilters() {
+    ["centerFilter","modeFilter","casteFilter","trainedFilter",
+     "certifiedFilter","placedFilter","schemeFilter","nsqfFilter", "searchInput"] // Added searchInput
+        .forEach(id => document.getElementById(id).value = "");
+    filterStudents();
+}
 </script>
 
 {% endblock content %}

@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 import openpyxl
-
+from .forms import StudentDataForm
 from .forms import ExcelUploadForm
 from .models import studentdata
 
@@ -61,11 +61,12 @@ def parse_date_field(value):
 def upload(request):
     if request.method == 'POST':
         form = ExcelUploadForm(request.POST, request.FILES)
+
         if form.is_valid():
             excel_file = request.FILES['file']
             year = form.cleaned_data['year']
             session = form.cleaned_data['session']
-            session_label = f"{session.upper()[:3]}-{year}"  # e.g. "JAN-2024"
+            session_label = f"{session.upper()[:3]}-{year}"
 
             try:
                 wb = openpyxl.load_workbook(excel_file)
@@ -77,30 +78,46 @@ def upload(request):
                 ]
 
                 success_count = 0
-                error_count = 0
+               
+                duplicate_count = 0
+
+                # 🔥 Existing roll numbers (fast lookup)
+                existing_rolls = set(
+                    studentdata.objects.values_list('roll_number', flat=True)
+                )
 
                 for row in sheet.iter_rows(min_row=2, values_only=True):
+
                     if all(cell is None for cell in row):
                         continue
 
                     try:
-                        row_data = {headers[i]: row[i] for i in range(len(headers)) if i < len(row)}
+                        row_data = {
+                            headers[i]: row[i]
+                            for i in range(len(headers))
+                            if i < len(row)
+                        }
 
                         name = str(row_data.get('name') or '').strip()
                         roll_number = str(row_data.get('roll_number') or '').strip()
                         course_name = str(row_data.get('course_name') or '').strip()
                         scheme = str(row_data.get('scheme') or '').strip()
 
+                        # ❌ Skip duplicate roll number
+                        if roll_number and roll_number in existing_rolls:
+                            duplicate_count += 1
+                            continue
+
                         # course_hour
                         try:
                             course_hour = int(float(str(row_data.get('course_hour') or 0)))
-                        except (ValueError, TypeError):
+                        except:
                             course_hour = 0
 
                         # fee
                         try:
                             fee = float(str(row_data.get('fee') or 0))
-                        except (ValueError, TypeError):
+                        except:
                             fee = 0
 
                         # mode
@@ -118,19 +135,18 @@ def upload(request):
                         if center not in ['inderlok', 'janakpuri', 'karkardooma']:
                             center = 'inderlok'
 
-                        trained_date = parse_date_field(row_data.get('trained_date'))
-                        certified_date = parse_date_field(row_data.get('certified_date'))
                         placed = parse_bool_field(row_data.get('placed', False))
                         nsqf = str(row_data.get('nsqf') or '').strip()
+
                         if not name or not course_name or course_hour <= 0:
                             error_count += 1
                             continue
 
-                        trained      = parse_bool_field(row_data.get('trained', False))
-                        certified    = parse_bool_field(row_data.get('certified', False))
+                        trained = parse_bool_field(row_data.get('trained', False))
+                        certified = parse_bool_field(row_data.get('certified', False))
 
-                        # auto-set dates from session_label if trained/certified
-                        trained_date   = session_label if trained else ''
+                        # auto-set dates
+                        trained_date = session_label if trained else ''
                         certified_date = session_label if certified else ''
 
                         student = studentdata(
@@ -152,14 +168,21 @@ def upload(request):
                             placed=placed,
                         )
 
-                        student.save()  # course_category and claimable_amount auto-set in model.save()
+                        student.save()
                         success_count += 1
 
+                        # 🔥 Add to set to prevent duplicate inside same file
+                        if roll_number:
+                            existing_rolls.add(roll_number)
+
                     except Exception as e:
-                        error_count += 1
+                       
                         print(f"Row error: {e}")
 
-                messages.success(request, f'Uploaded {success_count} records. Skipped: {error_count}')
+                messages.success(
+                    request,
+                    f'Uploaded: {success_count} | Duplicate skipped: {duplicate_count}'
+                )
 
             except Exception as e:
                 messages.error(request, f'Error reading file: {str(e)}')
@@ -266,6 +289,8 @@ def download(request):
                 'course_hour': s.course_hour,
                 'center_name': s.center_name,
                 'session':     s.session,
+                'scheme':      s.scheme,  
+                'nsqf':        s.nsqf,  
             }
             for c in ['GENERAL', 'OBC', 'SC', 'ST', 'PWD']:
                 grouped[key][c] = {'trained': 0, 'certified': 0, 'placed': 0, 'total': 0}
@@ -327,7 +352,8 @@ def api_download_data(request):
             'course_name':      s.course_name,
             'course_hour':      s.course_hour,
             'center_name':      s.center_name,
-            'nsqf': s.nsqf,
+            'scheme':           s.scheme ,
+            'nsqf':             s.nsqf ,
             'session':          s.session,
             'caste_category':   s.caste_category,
             'trained_date':     s.trained_date,
@@ -398,3 +424,22 @@ def update_student(request, student_id):
         'trained_date':     student.trained_date,
         'certified_date':   student.certified_date,
     })
+
+def inputView(request):
+    if request.method=='POST':
+        form=StudentDataForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("dashboard")
+    
+    else:
+        form=StudentDataForm()
+    return render(request,"input.html",{"form":form,})
+
+from django import template
+
+register = template.Library()
+
+@register.filter(name='add_class')
+def add_class(field, css_class):
+    return field.as_widget(attrs={"class": css_class})
