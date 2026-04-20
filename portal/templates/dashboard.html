@@ -69,8 +69,10 @@
     <select id="trainedFilter">
         <option value="">All (Trained)</option>
         <option value="true">Trained</option>
+        <option value='or'>Trained/Certified</option>
         <option value="false">Not Trained</option>
     </select>
+    
     <select id="certifiedFilter">
         <option value="">All (Certified)</option>
         <option value="true">Certified</option>
@@ -97,13 +99,6 @@
         <option value="yes">NSQF</option>
         <option value="no">Non NSQF</option>
     </select>
-    <select id="quarterlyFilter">
-        <option value="">All Quarterly</option>
-        <option value="Q1">Q1</option>
-        <option value="Q2">Q2</option>
-        <option value="Q3">Q3</option>
-        <option value="Q4">Q4</option>
-    </select>
     <select id="yearFilter">
         <option value="">All Years</option>
         <option value="2020">2020</option>
@@ -116,6 +111,14 @@
         <option value="2027">2027</option>
         <option value="2028">2028</option>
     </select>
+    <select id="quarterlyFilter">
+        <option value="">All Quarterly</option>
+        <option value="Q1">Q1</option>
+        <option value="Q2">Q2</option>
+        <option value="Q3">Q3</option>
+        <option value="Q4">Q4</option>
+    </select>
+    
     <div style="display: flex">
         <button
             onclick="clearFilters()"

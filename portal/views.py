@@ -97,8 +97,8 @@ def quarter_from_date(date_str):
     except Exception:
         return None, None
 
-
 def apply_filters(params):
+    print(params)
     qs = studentdata.objects.all()
     center = params.get("center")
     if center:
@@ -114,8 +114,12 @@ def apply_filters(params):
 
     trained = params.get("trained")
     if trained:
-        qs = qs.filter(trained=parse_bool(trained))
-
+        if trained == "or":
+            qs = qs.filter(Q(trained=True) | Q(certified=True))
+            print(qs)
+        else:
+            qs = qs.filter(trained=parse_bool(trained))
+        
     certified = params.get("certified")
     if certified:
         qs = qs.filter(certified=parse_bool(certified))
@@ -138,22 +142,22 @@ def apply_filters(params):
     elif nsqf == "yes":
         qs = qs.filter(nsqf__regex=r".+")
 
-    map = {"Q1": "APR", "Q2": "JUL", "Q3": "OCT", "Q4": "JAN"}
+    map = {"Q1": ["APR", "MAY", "JUN"], "Q2": ["JUL", "AUG", "SEP"], "Q3": ["OCT", "NOV", "DEC"], "Q4": ["JAN", "FEB", "MAR"]}
     quarter = params.get("quarterly")
 
     if quarter:
         month = map.get(quarter)
-        qs = qs.filter(
-            Q(session__startswith=f"{month}-") | Q(trained_date__startswith=f"{month}-")
-        )
-        print(qs)
+        w=Q()
+        for m in month:
+            a=Q(session__startswith=f"{m}-")
+            w=w|a
+        qs = qs.filter(w)
 
     yearly = params.get("year")
     if yearly:
-        qs = qs.filter(Q(session__contains=yearly) | Q(trained_date__endswith=yearly))
+        qs = qs.filter(Q(session__contains=yearly))
 
     return qs
-
 
 def student_to_dict(s):
     return {
@@ -187,7 +191,6 @@ def student_to_dict(s):
         "claimed": s.claimed,
         "session": s.session,
     }
-
 
 def xlrow_to_dict(s):
     return {

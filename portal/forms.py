@@ -63,18 +63,18 @@ class ExcelUploadForm(forms.Form):
     YEAR_CHOICES = [(str(year), str(year)) for year in range(2020, current_year + 2)]
     
     SESSION_CHOICES = [
-        ('January', 'January'),
-        ('February', 'February'),
-        ('March', 'March'),
-        ('April', 'April'),
-        ('May', 'May'),
-        ('June', 'June'),
-        ('July', 'July'),
-        ('August', 'August'),
-        ('September', 'September'),
-        ('October', 'October'),
-        ('November', 'November'),
-        ('December', 'December'),
+        ('JAN', 'JAN'),
+        ('FEB', 'FEB'),
+        ('MAR', 'MAR'),
+        ('APR', 'APR'),
+        ('MAY', 'MAY'),
+        ('JUN', 'JUN'),
+        ('JUL', 'JUL'),
+        ('AUG', 'AUG'),
+        ('SEP', 'SEP'),
+        ('OCT', 'OCT'),
+        ('NOV', 'NOV'),
+        ('DEC', 'DEC'),
     ]
     
     year = forms.ChoiceField(choices=YEAR_CHOICES, required=True, widget=forms.Select(attrs={'class': 'filter-select'}))
