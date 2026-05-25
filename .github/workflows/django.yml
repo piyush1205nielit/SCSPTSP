@@ -1,4 +1,4 @@
-name: Django CI
+name: Django CI/CD
 
 on:
   push:
@@ -8,23 +8,42 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
       matrix:
-        python-version: [3.14]
+        python-version: [3.11] # Note: Python 3.14 is an unreleased/experimental version in 2026. Use a stable version like 3.11 or 3.12.
 
     steps:
     - uses: actions/checkout@v4
+    
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4  # Upgraded version
       with:
         python-version: ${{ matrix.python-version }}
+        
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        
     - name: Run Tests
       run: |
         python manage.py test
+
+  deploy:
+    needs: build # Only runs if the 'build' job (tests) passes successfully
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Only deploy on pushes to main
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Executing remote ssh commands using ssh key
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.AWS_EC2_HOST }}      # Your EC2 Public IP
+        username: ubuntu                        # Default user for Ubuntu EC2
+        key: ${{ secrets.AWS_EC2_SSH_KEY }}     # Your .pem key contents
+        script: |
+          cd /path/to/your/app/scsptsp
+          git pull origin main
+          chmod +x deploy.sh
+          sudo ./deploy.sh
