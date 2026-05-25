@@ -10,14 +10,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 4
       matrix:
-        python-version: [3.11] # Note: Python 3.14 is an unreleased/experimental version in 2026. Use a stable version like 3.11 or 3.12.
+        python-version: [3.12]
 
     steps:
     - uses: actions/checkout@v4
     
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4  # Upgraded version
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         
@@ -31,19 +32,25 @@ jobs:
         python manage.py test
 
   deploy:
-    needs: build # Only runs if the 'build' job (tests) passes successfully
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Only deploy on pushes to main
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     
     steps:
-    - name: Executing remote ssh commands using ssh key
+    - name: Deploy to AWS EC2 via SSH
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.AWS_EC2_HOST }}      # Your EC2 Public IP
-        username: ubuntu                        # Default user for Ubuntu EC2
-        key: ${{ secrets.AWS_EC2_SSH_KEY }}     # Your .pem key contents
+        host: ${{ secrets.AWS_EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.AWS_EC2_SSH_KEY }}
+        port: 22
         script: |
-          cd /path/to/your/app/scsptsp
+          # Navigate to your project folder
+          cd /home/ubuntu/scsptsp
+          
+          # Pull latest code from GitHub
           git pull origin main
+          
+          # Make deploy script executable and run it
           chmod +x deploy.sh
           sudo ./deploy.sh
