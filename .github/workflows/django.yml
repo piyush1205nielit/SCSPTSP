@@ -42,7 +42,4 @@ jobs:
         key: ${{ vars.AWS_EC2_SSH_KEY }}
         port: 22
         script: |
-          cd /home/ubuntu/SCSPTSP
-          git fetch --all
-          git reset --hard origin/main
-          sudo ./deploy.sh
+          cd /home/ubuntu/SCSPTSP && sudo ./deploy.sh
