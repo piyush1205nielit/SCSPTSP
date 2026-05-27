@@ -759,9 +759,14 @@ def update_student(request, student_id):
         if body.get("batch_code"):
             student.batch_code = str(body["batch_code"]).strip().upper()
 
-        for f in ["dob", "fee_date", "gender", "mode", "caste_category", "center_name"]:
+        for f in ["gender", "mode", "caste_category", "center_name"]:
             if body.get(f) is not None:
                 setattr(student, f, body[f])
+
+        for f in ["dob", "fee_date"]:
+            val = body.get(f)
+            if val is not None:
+                setattr(student, f, val if val else None)
 
         try:
             student.course_hour = int(
