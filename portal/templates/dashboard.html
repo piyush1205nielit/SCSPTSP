@@ -449,21 +449,25 @@
             </div>
             <div class="mfield">
                 <label>Trained</label>
-                <select id="m_trained" class="minput">
+                <select id="m_trained" class="minput" onchange="toggleTrainedDate()">
                     <option value="false">No</option>
-                    <option value="true">
-                        Yes — date auto-set to current month
-                    </option>
+                    <option value="true">Yes</option>
                 </select>
+            </div>
+            <div class="mfield" id="m_trained_date_field" style="display:none;">
+                <label>Trained Date</label>
+                <input id="m_trained_date" class="minput" type="month" />
             </div>
             <div class="mfield">
                 <label>Certified</label>
-                <select id="m_certified" class="minput">
+                <select id="m_certified" class="minput" onchange="toggleCertifiedDate()">
                     <option value="false">No</option>
-                    <option value="true">
-                        Yes — date auto-set to current month
-                    </option>
+                    <option value="true">Yes</option>
                 </select>
+            </div>
+            <div class="mfield" id="m_certified_date_field" style="display:none;">
+                <label>Certified Date</label>
+                <input id="m_certified_date" class="minput" type="month" />
             </div>
             <div class="mfield">
                 <label>Placed</label>
@@ -661,6 +665,16 @@
 
     // ─── Edit modal ───────────────────────────────────────────────────────────
 
+    function toggleTrainedDate() {
+        const show = document.getElementById("m_trained").value === "true";
+        document.getElementById("m_trained_date_field").style.display = show ? "" : "none";
+    }
+
+    function toggleCertifiedDate() {
+        const show = document.getElementById("m_certified").value === "true";
+        document.getElementById("m_certified_date_field").style.display = show ? "" : "none";
+    }
+
     function openEditModal(i) {
         editingIndex = i;
         const s = currentData[i];
@@ -703,9 +717,24 @@
         document.getElementById("m_trained").value = s.trained
             ? "true"
             : "false";
+        const monthRevMap = {"JAN":"01","FEB":"02","MAR":"03","APR":"04","MAY":"05","JUN":"06","JUL":"07","AUG":"08","SEP":"09","OCT":"10","NOV":"11","DEC":"12"};
+        if (s.trained_date) {
+            const parts = s.trained_date.split("-");
+            document.getElementById("m_trained_date").value = `${parts[1]}-${monthRevMap[parts[0]] || "01"}`;
+        } else {
+            document.getElementById("m_trained_date").value = "";
+        }
+        toggleTrainedDate();
         document.getElementById("m_certified").value = s.certified
             ? "true"
             : "false";
+        if (s.certified_date) {
+            const parts = s.certified_date.split("-");
+            document.getElementById("m_certified_date").value = `${parts[1]}-${monthRevMap[parts[0]] || "01"}`;
+        } else {
+            document.getElementById("m_certified_date").value = "";
+        }
+        toggleCertifiedDate();
         document.getElementById("m_placed").value = s.placed ? "true" : "false";
         document.getElementById("m_claimed").value = s.claimed
             ? "true"
@@ -757,7 +786,9 @@
             fee_date: document.getElementById("m_fee_date").value,
             session: sessionValue,
             trained: document.getElementById("m_trained").value === "true",
+            trained_date: document.getElementById("m_trained_date").value,
             certified: document.getElementById("m_certified").value === "true",
+            certified_date: document.getElementById("m_certified_date").value,
             placed: document.getElementById("m_placed").value === "true",
             claimed: document.getElementById("m_claimed").value === "true",
         };

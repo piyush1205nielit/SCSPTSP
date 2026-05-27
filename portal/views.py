@@ -785,11 +785,13 @@ def update_student(request, student_id):
             new_val = body.get(field)
             if new_val is not None:
                 date_field = f"{field}_date"
-                # If toggling to True and no date exists, set to current session
-                if new_val and not getattr(student, date_field):
-                    setattr(student, date_field, current_session_label)
-                # If toggling to False, clear the date
-                elif not new_val:
+                date_val = body.get(date_field)
+                if new_val:
+                    if date_val:
+                        setattr(student, date_field, format_session_date(date_val))
+                    elif not getattr(student, date_field):
+                        setattr(student, date_field, current_session_label)
+                else:
                     setattr(student, date_field, "")
                 setattr(student, field, new_val)
 
