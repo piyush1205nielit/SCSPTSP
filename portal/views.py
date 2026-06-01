@@ -196,11 +196,17 @@ def apply_filters(params, user=None):
     if scheme:
         qs = qs.filter(scheme=scheme)
 
+    search = params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search) | Q(roll_number__icontains=search)
+        )
+
     nsqf = params.get("nsqf")
     if nsqf == "no":
-        qs = qs.filter(nsqf=None)
+        qs = qs.filter(nsqf__in=[None, "", "False"])
     elif nsqf == "yes":
-        qs = qs.filter(nsqf__regex=r".+")
+        qs = qs.filter(~Q(nsqf__in=[None, "", "False"]))
 
     qmap = {
         "Q1": ["APR", "MAY", "JUN"],
@@ -448,11 +454,13 @@ def upload(request):
                     placed_bool = parse_bool(row_dict.get("placed"))
                     claimed_bool = parse_bool(row_dict.get("claimed"))
 
-                    # NSQF: in the download it is the string "True"/"False".
-                    # Treat those as empty (non-NSQF) so the model choice field
-                    # only ever stores real "Level N" values.
+                    # NSQF: stored as "True" or empty string
                     raw_nsqf = safe_str(row_dict.get("nsqf"))
                     if raw_nsqf.lower() in ("true", "false"):
+                        raw_nsqf = raw_nsqf.capitalize()
+                    elif raw_nsqf.lower() in ("nsqf", "yes", "1"):
+                        raw_nsqf = "True"
+                    else:
                         raw_nsqf = ""
 
                     # Parse numeric fields safely
@@ -1306,7 +1314,7 @@ def sample_upload(request):
     caste_choices = [c[1] for c in studentdata.CASTE_CHOICES]
     mode_choices = [c[1] for c in studentdata.MODE_CHOICES]
     gender_choices = [c[1] for c in studentdata.GENDER]
-    nsqf_choices = [c[1] for c in studentdata.NSQF_LEVEL] + ["False", "True"]
+    nsqf_choices = ["True", "False"]
     course_choices = [c[1] for c in studentdata.COURSE_CHOICES]
     qualification_choices = [c[1] for c in studentdata.HIGHEST_QUALIFICATION]
 

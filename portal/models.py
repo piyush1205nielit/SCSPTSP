@@ -22,12 +22,8 @@ class studentdata(models.Model):
         ("online", "On Campus"),
     ]
     NSQF_LEVEL = [
-        ("Level 1", "Level 1"),
-        ("Level 2", "Level 2"),
-        ("Level 3", "Level 3"),
-        ("Level 4", "Level 4"),
-        ("Level 5", "Level 5"),
-        ("Level 6", "Level 6"),
+        ("True", "True"),
+        ("False", "False"),
     ]
     HIGHEST_QUALIFICATION = [
         ("10+2 / ITI / Pursuing Graduation", "10+2 / ITI / Pursuing Graduation"),

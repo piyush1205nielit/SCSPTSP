@@ -365,12 +365,12 @@
                 <label>Scheme</label><input id="m_scheme" class="minput" />
             </div>
             <div class="mfield">
-                <label>NSQF level</label
-                ><input
-                    id="m_nsqf"
-                    class="minput"
-                    placeholder="e.g. Level 4 — blank if Non-NSQF"
-                />
+                <label>NSQF</label
+                ><select id="m_nsqf" class="minput">
+                    <option value="">---</option>
+                    <option value="True">True</option>
+                    <option value="False">False</option>
+                </select>
             </div>
             <div class="mfield">
                 <label>Course hours</label
@@ -551,7 +551,8 @@
         const year = document.getElementById("yearFilter").value;
         const sortOrder = sortAsc ? "asc" : "desc";
 
-        const url = `/filter-students/?center=${center}&mode=${mode}&caste=${caste}&trained=${trained}&certified=${certified}&placed=${placed}&claimed=${claimed}&scheme=${scheme}&nsqf=${nsqf}&quarterly=${quarterly}&year=${year}&page=${currentPage}&limit=${currentLimit}&sort_field=${sortField || ""}&sort_order=${sortOrder}`;
+        const search = document.getElementById("searchInput").value.trim();
+        const url = `/filter-students/?center=${center}&mode=${mode}&caste=${caste}&trained=${trained}&certified=${certified}&placed=${placed}&claimed=${claimed}&scheme=${scheme}&nsqf=${nsqf}&quarterly=${quarterly}&year=${year}&search=${encodeURIComponent(search)}&page=${currentPage}&limit=${currentLimit}&sort_field=${sortField || ""}&sort_order=${sortOrder}`;
 
         fetch(url)
             .then((res) => res.json())
@@ -612,7 +613,8 @@
         const year = document.getElementById("yearFilter").value;
         const sortOrder = sortAsc ? "asc" : "desc";
 
-        const url = `/download-filtered-data/?center=${center}&mode=${mode}&caste=${caste}&trained=${trained}&certified=${certified}&placed=${placed}&claimed=${claimed}&scheme=${scheme}&nsqf=${nsqf}&quarterly=${quarterly}&year=${year}&sort_field=${sortField || ""}&sort_order=${sortOrder}`;
+        const search = document.getElementById("searchInput").value.trim();
+        const url = `/download-filtered-data/?center=${center}&mode=${mode}&caste=${caste}&trained=${trained}&certified=${certified}&placed=${placed}&claimed=${claimed}&scheme=${scheme}&nsqf=${nsqf}&quarterly=${quarterly}&year=${year}&search=${encodeURIComponent(search)}&sort_field=${sortField || ""}&sort_order=${sortOrder}`;
 
         window.open(url, "_blank");
     }
@@ -662,7 +664,7 @@
         <td>${s.qualifications || "-"}</td>
         <td>${s.aadhaar || "-"}</td>
         <td>${s.scheme || "-"}</td>
-        <td>${s.nsqf || '<span class="badge-no">Non NSQF</span>'}</td>
+        <td>${s.nsqf === "True" ? '<span class="badge-yes">NSQF</span>' : '<span class="badge-no">Non NSQF</span>'}</td>
         <td>${s.course_hour}</td>
         <td>${s.course_category}</td>
         <td>${s.center_name}</td>
@@ -711,7 +713,7 @@
         document.getElementById("m_aadhaar").value = s.aadhaar || "";
         document.getElementById("m_course_name").value = s.course_name;
         document.getElementById("m_scheme").value = s.scheme || "";
-        document.getElementById("m_nsqf").value = s.nsqf || "";
+        document.getElementById("m_nsqf").value = s.nsqf === "True" ? "True" : "";
         document.getElementById("m_course_hour").value = s.course_hour;
         document.getElementById("m_fee").value = s.fee;
         document.getElementById("m_fee_date").value = s.fee_date || "";
@@ -792,7 +794,7 @@
             aadhaar: document.getElementById("m_aadhaar").value.trim(),
             course_name: document.getElementById("m_course_name").value.trim(),
             scheme: document.getElementById("m_scheme").value.trim(),
-            nsqf: document.getElementById("m_nsqf").value.trim(),
+            nsqf: document.getElementById("m_nsqf").value === "True" ? "True" : "",
             course_hour: parseInt(
                 document.getElementById("m_course_hour").value,
             ),
@@ -919,18 +921,15 @@
         }),
     );
 
+    let searchTimeout;
     document
         .getElementById("searchInput")
         .addEventListener("input", function () {
-            const searchTerm = this.value.toLowerCase();
-            const filteredData = currentData.filter((student) => {
-                const name = (student.name || "").toLowerCase();
-                const roll = (student.roll_number || "")
-                    .toString()
-                    .toLowerCase();
-                return name.includes(searchTerm) || roll.includes(searchTerm);
-            });
-            renderTable(filteredData);
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                filterStudents();
+            }, 300);
         });
 
     window.onload = () => {
