@@ -106,8 +106,36 @@ class studentdata(models.Model):
     placed = models.BooleanField(default=False)
     claimed = models.BooleanField(default=False)
 
+    def _same_quarter_trained_certified(self):
+        """Return True if both trained_date and certified_date exist and fall in the same quarter."""
+        if not self.trained or not self.certified:
+            return False
+        tq = self.get_quarter_from_date(self.trained_date)
+        cq = self.get_quarter_from_date(self.certified_date)
+        return bool(tq and cq and tq == cq)
+
+    def calculate_claimable_amount(self):
+        """Calculate the overall claimable amount (no quarter filter).
+        
+        - If trained & certified in the same quarter → 100%
+        - A/O level: 100% if certified, 0 if only trained
+        - Non-A/O level: 30% of fee if certified, 70% of fee if trained, 0 otherwise
+        """
+        if not self.fee:
+            return 0
+        if self._same_quarter_trained_certified():
+            return self.fee
+        if self.is_ao_level():
+            return self.fee if self.certified else 0
+        if self.certified:
+            return self.fee * 30 / 100
+        if self.trained:
+            return self.fee * 70 / 100
+        return 0
+
     def save(self, *args, **kwargs):
         self.course_category = get_course_category(self.course_name, self.course_hour)
+        self.claimable_amount = self.calculate_claimable_amount()
         super().save(*args, **kwargs)
 
     def is_ao_level(self):
@@ -154,14 +182,23 @@ class studentdata(models.Model):
         """Calculate claimable amount based on selected quarter filter
         
         Returns the claimable amount as percentage of fee for the given quarter:
-        - For A/O-level: 100% if certified in that quarter, 0% if only trained
-        - For others: 70% if trained in that quarter, 30% if certified in that quarter
+        - If trained & certified in the same selected quarter → 100%
+        - A/O level: 100% if certified in that quarter, 0% if only trained
+        - Non-A/O level: 70% if trained in that quarter, 30% if certified in that quarter
         """
         if not self.fee:
             return 0
 
         trained_quarter = self.get_quarter_from_date(self.trained_date)
         certified_quarter = self.get_quarter_from_date(self.certified_date)
+
+        # Same quarter rule applies to everyone
+        if (
+            self.trained
+            and self.certified
+            and trained_quarter == certified_quarter == selected_quarter
+        ):
+            return self.fee
 
         if self.is_ao_level():
             # A/O level: 100% if certified, 0% if trained
@@ -205,3 +242,45 @@ class Dlc(models.Model):
 
     def __str__(self):
         return f"{self.course_name}"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        "auth.User", on_delete=models.CASCADE, related_name="profile"
+    )
+    center_name = models.CharField(
+        max_length=30,
+        choices=studentdata.CENTER_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Center this user is restricted to. Leave empty for admins (no restriction).",
+    )
+
+    def __str__(self):
+        return f"{self.user.username} - {self.center_name or 'Admin (all centers)'}"
+
+    @property
+    def is_center_user(self):
+        return bool(self.center_name)
+
+    @property
+    def is_admin(self):
+        return self.user.is_superuser or self.user.is_staff
+
+
+def get_user_profile(user):
+    """Return the UserProfile for a user, creating it if missing."""
+    if not user or not user.is_authenticated:
+        return None
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    return profile
+
+
+def get_user_center(user):
+    """Return the center name the user is restricted to, or None for admins."""
+    if not user or not user.is_authenticated:
+        return None
+    if user.is_superuser or user.is_staff:
+        return None
+    profile = get_user_profile(user)
+    return profile.center_name if profile else None

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import studentdata , NsqfElectronics  ,NsqfIT ,Dlc
+from .models import studentdata , NsqfElectronics  ,NsqfIT ,Dlc , UserProfile
 from import_export.admin import ImportExportModelAdmin
 # Register your models here.
 
@@ -15,25 +15,30 @@ class StudentDataAdmin(ImportExportModelAdmin):
     "qualifications",
     "address",
     "aadhaar",
-    "course_name",    
-    "course_hour",  
+    "course_name",
+    "course_hour",
     "course_category",
-    "scheme",       
-    "nsqf",     
-    "mode",         
-    "caste_category", 
-    "center_name",    
-    "fee",         
+    "scheme",
+    "nsqf",
+    "mode",
+    "caste_category",
+    "center_name",
+    "fee",
     "claimable_amount",
     "fee_date",
-    "trained",       
-    "trained_date",    
-    "certified",     
-    "certified_date",  
+    "trained",
+    "trained_date",
+    "certified",
+    "certified_date",
     "placed"
-      ]   
+      ]
+
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "center_name")
+    list_filter = ("center_name",)
 
 admin.site.register(studentdata,StudentDataAdmin)
 admin.site.register(NsqfIT)
 admin.site.register(NsqfElectronics)
 admin.site.register(Dlc)
+admin.site.register(UserProfile, UserProfileAdmin)

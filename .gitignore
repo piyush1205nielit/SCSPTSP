@@ -1,7 +1,21 @@
+# Environment
 .env
 .venv/
+
+# Database — NEVER commit SQLite files
 db.sqlite3
+*.sqlite3
+*.sqlite
+*.db
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+
+# Staticfiles
 staticfiles/
-...
+
+# OS
+.DS_Store
+Thumbs.db

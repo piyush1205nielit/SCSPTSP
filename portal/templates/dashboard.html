@@ -47,12 +47,19 @@
 <h2>Student Dashboard</h2>
 
 <div class="filters">
+    {% if is_admin_user %}
     <select id="centerFilter">
         <option value="">All Centers</option>
         <option value="inderlok">Inderlok</option>
         <option value="janakpuri">Janakpuri</option>
         <option value="karkardooma">Karkardooma</option>
     </select>
+    {% else %}
+    <select id="centerFilter" disabled>
+        <option value="{{ user_center }}">{{ user_center|capfirst }}</option>
+    </select>
+    <input type="hidden" id="centerFilterHidden" value="{{ user_center }}">
+    {% endif %}
     <select id="modeFilter">
         <option value="">All Mode</option>
         <option value="offline">Offline</option>
@@ -526,7 +533,12 @@
     // ─── Fetch & render ───────────────────────────────────────────────────────
 
     function filterStudents() {
-        const center = document.getElementById("centerFilter").value;
+        const centerEl = document.getElementById("centerFilter");
+        let center = centerEl ? centerEl.value : "";
+        if (centerEl && centerEl.disabled) {
+            const hidden = document.getElementById("centerFilterHidden");
+            center = hidden ? hidden.value : "";
+        }
         const mode = document.getElementById("modeFilter").value;
         const caste = document.getElementById("casteFilter").value;
         const trained = document.getElementById("trainedFilter").value;
@@ -582,7 +594,12 @@
     }
 
     function downloadFilteredData() {
-        const center = document.getElementById("centerFilter").value;
+        const centerEl = document.getElementById("centerFilter");
+        let center = centerEl ? centerEl.value : "";
+        if (centerEl && centerEl.disabled) {
+            const hidden = document.getElementById("centerFilterHidden");
+            center = hidden ? hidden.value : "";
+        }
         const mode = document.getElementById("modeFilter").value;
         const caste = document.getElementById("casteFilter").value;
         const trained = document.getElementById("trainedFilter").value;
