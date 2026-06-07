@@ -2,235 +2,37 @@
 
 {% block content %}
 <div class="container-fluid px-3">
-    <!-- Page header -->
-    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3">
-        <div>
-            <h2 class="fw-bold m-0" style="color: #1a1a1a; font-size: 1.8rem;">
-                Student Overview
-                {% if user_center %}
-                    <span class="badge ms-2" style="background:#0e2238; font-size:0.7rem; vertical-align:middle;">
-                        {{ user_center|capfirst }} only
-                    </span>
-                {% else %}
-                    <span class="badge bg-success ms-2" style="font-size:0.7rem; vertical-align:middle;">
-                        All Centers
-                    </span>
-                {% endif %}
-            </h2>
-            <p class="text-muted small mt-1 mb-0">Comprehensive statistics, enrollment, and progress data</p>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card border-0 shadow-sm rounded-2 mb-3">
-        <div class="card-body p-3">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Session</label>
-                    <select id="sessionSelect" class="form-select form-select-sm">
-                        <option value="">All Sessions</option>
-                        {% for session in sessions %}
-                            <option value="{{ session }}" {% if selected_session == session %}selected{% endif %}>{{ session }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Year</label>
-                    <select id="yearSelect" class="form-select form-select-sm">
-                        <option value="">All Years</option>
-                        {% for y in years %}
-                            <option value="{{ y }}" {% if selected_filters.year == y %}selected{% endif %}>{{ y }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Quarter</label>
-                    <select id="quarterSelect" class="form-select form-select-sm">
-                        <option value="">All Quarters</option>
-                        <option value="Q1" {% if selected_filters.quarter == "Q1" %}selected{% endif %}>Q1 (Apr–Jun)</option>
-                        <option value="Q2" {% if selected_filters.quarter == "Q2" %}selected{% endif %}>Q2 (Jul–Sep)</option>
-                        <option value="Q3" {% if selected_filters.quarter == "Q3" %}selected{% endif %}>Q3 (Oct–Dec)</option>
-                        <option value="Q4" {% if selected_filters.quarter == "Q4" %}selected{% endif %}>Q4 (Jan–Mar)</option>
-                    </select>
-                </div>
-                {% if is_admin_user %}
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Center</label>
-                    <select id="centerSelect" class="form-select form-select-sm">
-                        <option value="">All Centers</option>
-                        <option value="inderlok" {% if selected_filters.center == "inderlok" %}selected{% endif %}>Inderlok</option>
-                        <option value="janakpuri" {% if selected_filters.center == "janakpuri" %}selected{% endif %}>Janakpuri</option>
-                        <option value="karkardooma" {% if selected_filters.center == "karkardooma" %}selected{% endif %}>Karkardooma</option>
-                    </select>
-                </div>
-                {% endif %}
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Course</label>
-                    <select id="courseSelect" class="form-select form-select-sm">
-                        <option value="">All Courses</option>
-                        {% for c in courses %}
-                            <option value="{{ c }}" {% if selected_filters.course == c %}selected{% endif %}>{{ c }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Mode</label>
-                    <select id="modeSelect" class="form-select form-select-sm">
-                        <option value="">All Modes</option>
-                        <option value="offline" {% if selected_filters.mode == "offline" %}selected{% endif %}>Offline</option>
-                        <option value="online" {% if selected_filters.mode == "online" %}selected{% endif %}>Online</option>
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Caste</label>
-                    <select id="casteSelect" class="form-select form-select-sm">
-                        <option value="">All Castes</option>
-                        <option value="GENERAL" {% if selected_filters.caste == "GENERAL" %}selected{% endif %}>General</option>
-                        <option value="OBC" {% if selected_filters.caste == "OBC" %}selected{% endif %}>OBC</option>
-                        <option value="SC" {% if selected_filters.caste == "SC" %}selected{% endif %}>SC</option>
-                        <option value="ST" {% if selected_filters.caste == "ST" %}selected{% endif %}>ST</option>
-                        <option value="PWD" {% if selected_filters.caste == "PWD" %}selected{% endif %}>PWD</option>
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Scheme</label>
-                    <select id="schemeSelect" class="form-select form-select-sm">
-                        <option value="">All Schemes</option>
-                        {% for s in schemes %}
-                            <option value="{{ s }}" {% if selected_filters.scheme == s %}selected{% endif %}>{{ s }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">NSQF</label>
-                    <select id="nsqfSelect" class="form-select form-select-sm">
-                        <option value="">All NSQF</option>
-                        <option value="yes" {% if selected_filters.nsqf == "yes" %}selected{% endif %}>NSQF</option>
-                        <option value="no" {% if selected_filters.nsqf == "no" %}selected{% endif %}>Non-NSQF</option>
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Trained</label>
-                    <select id="trainedSelect" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        <option value="true" {% if selected_filters.trained == "true" %}selected{% endif %}>Yes</option>
-                        <option value="false" {% if selected_filters.trained == "false" %}selected{% endif %}>No</option>
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Certified</label>
-                    <select id="certifiedSelect" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        <option value="true" {% if selected_filters.certified == "true" %}selected{% endif %}>Yes</option>
-                        <option value="false" {% if selected_filters.certified == "false" %}selected{% endif %}>No</option>
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Placed</label>
-                    <select id="placedSelect" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        <option value="true" {% if selected_filters.placed == "true" %}selected{% endif %}>Yes</option>
-                        <option value="false" {% if selected_filters.placed == "false" %}selected{% endif %}>No</option>
-                    </select>
-                </div>
-                <div class="col-md-3 col-lg-2">
-                    <label class="form-label fw-semibold small mb-1">Claimed</label>
-                    <select id="claimedSelect" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        <option value="true" {% if selected_filters.claimed == "true" %}selected{% endif %}>Claimed</option>
-                        <option value="false" {% if selected_filters.claimed == "false" %}selected{% endif %}>Not Claimed</option>
-                    </select>
-                </div>
-                <div class="col-12 d-flex gap-2 mt-2">
-                    <button id="applyFiltersBtn" class="btn btn-sm text-white" style="background:#0e2238;">
-                        Apply Filters
-                    </button>
-                    <button id="resetFiltersBtn" class="btn btn-sm btn-outline-secondary">
-                        Reset
-                    </button>
-                </div>
+    <!-- Header Section -->
+    <div class="mb-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold m-0" style="color: #1a1a1a; font-size: 1.8rem;">Student Overview</h2>
+                <p class="text-muted small mt-1 mb-0">Comprehensive statistics and enrollment data</p>
             </div>
         </div>
     </div>
 
-    <!-- KPI / Summary cards -->
-    <div class="row g-3 mb-3" id="kpiRow">
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-2 h-100" style="background:linear-gradient(135deg,#0e2238,#1d3b66);">
-                <div class="card-body p-3">
-                    <p class="text-white-50 small mb-1 fw-semibold">Total Enrolled</p>
-                    <h3 class="fw-bold text-white mb-0" id="kpiTotal">{{ all_record }}</h3>
-                </div>
-            </div>
+    <!-- Filter and Total Section -->
+    <div class="row mb-3 align-items-center">
+        <div class="col-md-4 col-lg-3">
+            <label for="sessionSelect" class="form-label fw-bold small text-dark mb-1">Filter by Session</label>
+            <select id="sessionSelect" class="form-select form-select-sm rounded-2 border-1" style="border-color: #dee2e6;">
+                <option value="">📅 All Sessions</option>
+                {% for session in sessions %}
+                    <option value="{{ session }}" {% if selected_session == session %}selected{% endif %}>{{ session }}</option>
+                {% endfor %}
+            </select>
         </div>
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-2 h-100" style="background:linear-gradient(135deg,#1e6f5c,#2a9d8f);">
-                <div class="card-body p-3">
-                    <p class="text-white-50 small mb-1 fw-semibold">Trained</p>
-                    <h3 class="fw-bold text-white mb-0" id="kpiTrained">{{ trained_count }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-2 h-100" style="background:linear-gradient(135deg,#264653,#3a86ff);">
-                <div class="card-body p-3">
-                    <p class="text-white-50 small mb-1 fw-semibold">Certified</p>
-                    <h3 class="fw-bold text-white mb-0" id="kpiCertified">{{ certified_count }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-2 h-100" style="background:linear-gradient(135deg,#6a4c93,#8e7dbe);">
-                <div class="card-body p-3">
-                    <p class="text-white-50 small mb-1 fw-semibold">Placed</p>
-                    <h3 class="fw-bold text-white mb-0" id="kpiPlaced">{{ placed_count }}</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Money cards -->
-    <div class="row g-3 mb-3">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-2 h-100" style="background:#f1f5f9;">
-                <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted small mb-1 fw-semibold">Total Fee Collectable</p>
-                        <h4 class="fw-bold text-dark mb-0" id="kpiFee">₹{{ total_fee|floatformat:0 }}</h4>
-                    </div>
-                    <div class="text-end">
-                        <p class="text-muted small mb-1 fw-semibold">Claimed (students)</p>
-                        <h4 class="fw-bold mb-0" style="color:#1e6f5c;" id="kpiClaimedCount">{{ claimed_count }}</h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-2 h-100" style="background:#f1f5f9;">
-                <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted small mb-1 fw-semibold">Total Claimable Amount</p>
-                        <h4 class="fw-bold text-dark mb-0" id="kpiClaimable">₹{{ total_claimable|floatformat:0 }}</h4>
-                    </div>
-                    <div>
-                        <p class="text-muted small mb-1 fw-semibold text-end">Filter Status</p>
-                        <span class="badge bg-secondary" id="kpiFilterStatus">All records</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-2 h-100" style="background:#f1f5f9; border-left: 4px solid #1e6f5c;">
-                <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted small mb-1 fw-semibold">Claimed Amount</p>
-                        <h4 class="fw-bold text-dark mb-0" id="kpiClaimedAmount">₹{{ total_claimed_amount|floatformat:0 }}</h4>
-                    </div>
-                    <div class="text-end">
-                        <p class="text-muted small mb-1 fw-semibold">of Claimable</p>
-                        <span class="badge" style="background:#1e6f5c; color:white;" id="kpiClaimedPercent">
-                            {% if total_claimable > 0 %}{{ total_claimed_amount|floatformat:0 }} / {{ total_claimable|floatformat:0 }}{% else %}—{% endif %}
-                        </span>
+        <div class="col-md-8 col-lg-9">
+            <div class="card border-0 shadow-sm rounded-2 overflow-hidden" style="background-color: #0e2238;">
+                <div class="p-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="mb-0 fw-semibold text-white small" style="opacity: 0.9;">Total Enrolled Students</p>
+                            <h3 class="fw-bold text-white mb-0">
+                                <span id="overviewTotal">{{ all_record }}</span>
+                            </h3>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -238,292 +40,202 @@
     </div>
 
     <!-- Center Cards Section -->
-    <div class="row g-3" id="overviewCards" style="justify-content: center;">
+    <div class="row g-3" id="overviewCards" style="max-height: 70vh; overflow-y: auto; justify-content: center;">
         {% for center, stats in centers %}
             <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-2 overflow-hidden h-100" style="min-height: 380px;">
+                <div class="card border-0 shadow-sm rounded-2 overflow-hidden h-100" style="min-height: 350px;">
                     <!-- Card Header -->
-                    <div style="background:linear-gradient(135deg,#0e2238,#1d3b66); padding: 1rem;">
+                    <div style="background-color:#0e2238; padding: 1rem;">
                         <h5 class="text-white fw-bold mb-2" style="font-size: 1.1rem;">{{ center }}</h5>
                         <p class="text-white mb-0 small" style="opacity: 0.9; font-size: 0.9rem;">
-                            <strong>Total:</strong> <span style="font-size: 1.3rem;" class="center-total">{{ stats.Total }}</span>
+                            <strong>Total:</strong> <span style="font-size: 1.3rem;">{{ stats.Total }}</span>
                         </p>
                     </div>
 
                     <!-- Card Body -->
-                    <div class="p-3">
+                    <div class="p-2">
                         <!-- Caste Stats -->
-                        <p class="text-muted small fw-semibold mb-2 text-uppercase">Caste Breakdown</p>
                         <div class="row g-2 mb-3">
                             <div class="col-4">
                                 <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">GEN</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">{{ stats.GENERAL }}</h5>
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">GEN</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.GENERAL }}</h5>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">SC</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">{{ stats.SC }}</h5>
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">SC</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.SC }}</h5>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">ST</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">{{ stats.ST }}</h5>
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">ST</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.ST }}</h5>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">OBC</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">{{ stats.OBC }}</h5>
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">OBC</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.OBC }}</h5>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">PWD</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">{{ stats.PWD }}</h5>
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">PWD</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.PWD }}</h5>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Course Types -->
-                        <p class="text-muted small fw-semibold mb-2 text-uppercase">Course Categories</p>
                         <div class="row g-2">
                             <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#e0f2fe;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">B (Long)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">{{ stats.B }}</h5>
+                                <div class="text-center p-2 bg-light rounded-1">
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">B</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.B }}</h5>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#dcfce7;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">C (Short)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">{{ stats.C }}</h5>
+                                <div class="text-center p-2 bg-light rounded-1">
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">C</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.C }}</h5>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#fef3c7;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">D (Mini)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">{{ stats.D }}</h5>
+                                <div class="text-center p-2 bg-light rounded-1">
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">D</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.D }}</h5>
                                 </div>
                             </div>
                             <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#fee2e2;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">E (DLC)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">{{ stats.E }}</h5>
+                                <div class="text-center p-2 bg-light rounded-1">
+                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">E</p>
+                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.E }}</h5>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        {% empty %}
-            <div class="col-12 text-center text-muted py-5">No data to display for the current filters.</div>
         {% endfor %}
     </div>
 </div>
 
 <style>
     .card {
-        transition: box-shadow 0.2s ease, transform 0.2s ease;
+        transition: box-shadow 0.2s ease;
     }
     .card:hover {
         box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1) !important;
-        transform: translateY(-1px);
     }
     .x-small {
         font-size: 0.7rem;
     }
-    #overviewCards::-webkit-scrollbar {
-        width: 6px;
-    }
-    #overviewCards::-webkit-scrollbar-thumb {
-        background-color: rgba(0, 0, 0, 0.2);
-        border-radius: 3px;
-    }
 </style>
+    <script>
+        const sessionSelect = document.getElementById('sessionSelect');
+        const overviewTotal = document.getElementById('overviewTotal');
+        const overviewCards = document.getElementById('overviewCards');
 
-<script>
-    function buildFilterUrl() {
-        const params = new URLSearchParams();
-        const get = (id) => {
-            const el = document.getElementById(id);
-            return el ? el.value : "";
-        };
-        const fields = {
-            "session": "sessionSelect",
-            "year": "yearSelect",
-            "quarter": "quarterSelect",
-            "center": "centerSelect",
-            "course": "courseSelect",
-            "mode": "modeSelect",
-            "caste": "casteSelect",
-            "scheme": "schemeSelect",
-            "nsqf": "nsqfSelect",
-            "trained": "trainedSelect",
-            "certified": "certifiedSelect",
-            "placed": "placedSelect",
-            "claimed": "claimedSelect",
-        };
-        for (const [k, id] of Object.entries(fields)) {
-            const v = get(id);
-            if (v) params.set(k, v);
-        }
-        return params;
-    }
-
-    function renderCenterCard(center) {
-        return `
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-2 overflow-hidden h-100" style="min-height: 380px;">
-                    <div style="background:linear-gradient(135deg,#0e2238,#1d3b66); padding: 1rem;">
-                        <h5 class="text-white fw-bold mb-2" style="font-size: 1.1rem;">${center.name}</h5>
-                        <p class="text-white mb-0 small" style="opacity: 0.9; font-size: 0.9rem;">
-                            <strong>Total:</strong> <span style="font-size: 1.3rem;">${center.stats.Total}</span>
-                        </p>
-                    </div>
-                    <div class="p-3">
-                        <p class="text-muted small fw-semibold mb-2 text-uppercase">Caste Breakdown</p>
-                        <div class="row g-2 mb-3">
-                            <div class="col-4">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">GEN</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">${center.stats.GENERAL}</h5>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">SC</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">${center.stats.SC}</h5>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">ST</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">${center.stats.ST}</h5>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">OBC</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">${center.stats.OBC}</h5>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.75rem;">PWD</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.15rem;">${center.stats.PWD}</h5>
-                                </div>
-                            </div>
+        function renderCenterCard(center) {
+            return `
+                <div class="col-md-6 col-lg-4 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-2 overflow-hidden h-100" style="min-height: 350px;">
+                        <div style="background-color: #0e2238; padding: 1rem;">
+                            <h5 class="text-white fw-bold mb-2" style="font-size: 1.1rem;">${center.name}</h5>
+                            <p class="text-white mb-0 small" style="opacity: 0.9; font-size: 0.9rem;">
+                                <strong>Total:</strong> <span style="font-size: 1.3rem;">${center.stats.Total}</span>
+                            </p>
                         </div>
-                        <p class="text-muted small fw-semibold mb-2 text-uppercase">Course Categories</p>
-                        <div class="row g-2">
-                            <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#e0f2fe;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">B (Long)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">${center.stats.B}</h5>
+                        <div class="p-2">
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">GEN</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.GENERAL}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">SC</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.SC}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">ST</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.ST}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">OBC</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.OBC}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">PWD</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.PWD}</h5>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#dcfce7;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">C (Short)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">${center.stats.C}</h5>
+                            <div class="row g-2">
+                                <div class="col-3">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">B</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.B}</h5>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#fef3c7;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">D (Mini)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">${center.stats.D}</h5>
+                                <div class="col-3">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">C</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.C}</h5>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 rounded-1" style="background:#fee2e2;">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.7rem;">E (DLC)</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">${center.stats.E}</h5>
+                                <div class="col-3">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">D</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.D}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-center p-2 bg-light rounded-1">
+                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">E</p>
+                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.E}</h5>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-    }
+            `;
+        }
 
-    function loadOverviewData() {
-        const params = buildFilterUrl();
-        const url = new URL('{% url "overview_data" %}', window.location.origin);
-        params.forEach((v, k) => url.searchParams.set(k, v));
+        function loadOverviewData(sessionValue) {
+            const url = new URL('{% url "overview_data" %}', window.location.origin);
+            if (sessionValue) {
+                url.searchParams.set('session', sessionValue);
+            }
 
-        // Show "loading" status in the badge
-        const status = document.getElementById('kpiFilterStatus');
-        if (status) status.textContent = 'Loading…';
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    overviewTotal.textContent = data.all_record;
+                    overviewCards.innerHTML = data.centers.map(renderCenterCard).join('');
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('kpiTotal').textContent = data.all_record;
-                document.getElementById('kpiTrained').textContent = data.trained_count;
-                document.getElementById('kpiCertified').textContent = data.certified_count;
-                document.getElementById('kpiPlaced').textContent = data.placed_count;
-                document.getElementById('kpiClaimedCount').textContent = data.claimed_count;
-                document.getElementById('kpiFee').textContent = '₹' + Math.round(data.total_fee).toLocaleString('en-IN');
-                document.getElementById('kpiClaimable').textContent = '₹' + Math.round(data.total_claimable).toLocaleString('en-IN');
-                document.getElementById('kpiClaimedAmount').textContent = '₹' + Math.round(data.total_claimed_amount).toLocaleString('en-IN');
-                const pct = document.getElementById('kpiClaimedPercent');
-                if (data.total_claimable > 0) {
-                    pct.textContent = Math.round(data.total_claimed_amount).toLocaleString('en-IN') + ' / ' + Math.round(data.total_claimable).toLocaleString('en-IN');
-                } else {
-                    pct.textContent = '—';
-                }
-                document.getElementById('overviewCards').innerHTML =
-                    (data.centers && data.centers.length)
-                        ? data.centers.map(renderCenterCard).join('')
-                        : '<div class="col-12 text-center text-muted py-5">No data to display for the current filters.</div>';
-
-                const active = [...url.searchParams.entries()].filter(([k]) => k !== 'session');
-                if (active.length > 0) {
-                    if (status) {
-                        status.textContent = active.length + ' filter' + (active.length > 1 ? 's' : '') + ' active';
-                        status.classList.remove('bg-secondary');
-                        status.classList.add('bg-success');
+                    const currentOption = sessionSelect.querySelector(`option[value="${sessionValue}"]`);
+                    if (currentOption) {
+                        currentOption.selected = true;
                     }
-                } else if (url.searchParams.get('session')) {
-                    if (status) {
-                        status.textContent = 'Filtered by session ' + url.searchParams.get('session');
-                        status.classList.remove('bg-secondary');
-                        status.classList.add('bg-info');
-                    }
-                } else {
-                    if (status) {
-                        status.textContent = 'All records';
-                        status.classList.remove('bg-success', 'bg-info');
-                        status.classList.add('bg-secondary');
-                    }
-                }
-            })
-            .catch(err => console.error('Overview AJAX error', err));
-    }
+                })
+                .catch(err => console.error('Overview AJAX error', err));
+        }
 
-    document.getElementById('applyFiltersBtn').addEventListener('click', loadOverviewData);
-    document.getElementById('resetFiltersBtn').addEventListener('click', () => {
-        [
-            'sessionSelect','yearSelect','quarterSelect','centerSelect',
-            'courseSelect','modeSelect','casteSelect','schemeSelect',
-            'nsqfSelect','trainedSelect','certifiedSelect','placedSelect','claimedSelect'
-        ].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
+        sessionSelect.addEventListener('change', () => {
+            loadOverviewData(sessionSelect.value);
         });
-        loadOverviewData();
-    });
-
-    // Reload on Enter key inside any filter
-    document.querySelectorAll('.card-body select').forEach((el) => {
-        el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') loadOverviewData();
-        });
-    });
-</script>
+    </script>
 
 {% endblock content %}

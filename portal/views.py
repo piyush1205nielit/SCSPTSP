@@ -16,14 +16,13 @@ from django.contrib.admin import options
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.db import models
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from openpyxl.styles import Font, PatternFill
 
-from .forms import ExcelUploadForm, StudentDataForm
-from .models import Dlc, NsqfElectronics, NsqfIT, UserProfile, studentdata
+from .forms import ExcelUploadForm, PlacementUploadForm, StudentDataForm
+from .models import Dlc, NsqfElectronics, NsqfIT, PlacementRecord, studentdata, UserProfile
 
 MONTH_MAP = {
     m: i
@@ -76,6 +75,16 @@ SORTABLE_FIELDS = {
 }
 
 CENTERS = ["inderlok", "janakpuri", "karkardooma"]
+
+
+def get_student_qs(user):
+    try:
+        profile = user.profile
+        if profile.center:
+            return studentdata.objects.filter(center_name=profile.center)
+    except UserProfile.DoesNotExist:
+        pass
+    return studentdata.objects.all()
 
 
 def parse_bool(value):
@@ -143,24 +152,15 @@ def quarter_from_date(date_str):
         return None, None
 
 
-def apply_filters(params, user=None):
+def apply_filters(params, base_qs=None):
     """
     CRITICAL FIX: Quarterly filtering now checks trained_date and certified_date.
     If filtering by Q1 and student was trained in Q1 but certified in Q2,
     the student appears as TRAINED (not certified) when Q1 is selected.
     When Q2 is selected, the student appears as CERTIFIED (not trained).
-
-    Center-restricted users (non-superuser) can only see their assigned center.
-    Django superusers (the global admin) see all centers.
     """
-    qs = studentdata.objects.all()
-
-    # Enforce center restriction for non-superuser users
-    if user and not user.is_superuser:
-        profile, _ = UserProfile.objects.get_or_create(user=user)
-        if profile.center_name:
-            qs = qs.filter(center_name=profile.center_name)
-
+    print(params)
+    qs = base_qs if base_qs is not None else studentdata.objects.all()
     center = params.get("center")
     if center:
         qs = qs.filter(center_name=center)
@@ -196,17 +196,11 @@ def apply_filters(params, user=None):
     if scheme:
         qs = qs.filter(scheme=scheme)
 
-    search = params.get("search", "").strip()
-    if search:
-        qs = qs.filter(
-            Q(name__icontains=search) | Q(roll_number__icontains=search)
-        )
-
     nsqf = params.get("nsqf")
     if nsqf == "no":
-        qs = qs.filter(nsqf__in=[None, "", "False"])
+        qs = qs.filter(nsqf=None)
     elif nsqf == "yes":
-        qs = qs.filter(~Q(nsqf__in=[None, "", "False"]))
+        qs = qs.filter(nsqf__regex=r".+")
 
     qmap = {
         "Q1": ["APR", "MAY", "JUN"],
@@ -348,10 +342,18 @@ def logout_view(request):
     return redirect("login")
 
 
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+    return render(request, "landing.html")
+
+
 @login_required(login_url="/login")
 @ensure_csrf_cookie
 def dashboard(request):
-    return render(request, "dashboard.html")
+    profile = getattr(request.user, "profile", None)
+    user_center = profile.center if profile and profile.center else None
+    return render(request, "dashboard.html", {"user_center": user_center})
 
 
 @login_required(login_url="/login")
@@ -361,16 +363,7 @@ def upload(request):
     session is taken from the upload page dropdowns (session=month, year) and stored as MON-YYYY.
     Trained/certified booleans are inferred from explicit columns or presence of trained_date/certified_date.
     If trained/certified is True but corresponding *_date is missing, set date to the selected session.
-
-    Center-restricted users can only upload rows for their own center; rows
-    with another center_name are skipped.
     """
-    is_admin = request.user.is_superuser
-    forced_center = None
-    if not is_admin:
-        profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        forced_center = profile.center_name
-
     if request.method == "POST":
         form = ExcelUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -379,89 +372,74 @@ def upload(request):
             year = (request.POST.get("year") or "").strip()
             form_session = f"{month}-{year}" if month and year else ""
 
+            profile = getattr(request.user, "profile", None)
+            user_center = profile.center if profile and profile.center else None
+
             try:
                 wb = openpyxl.load_workbook(uploaded_file, data_only=True)
                 ws = wb.active
-                success = 0
-                dupes = 0
+                created = 0
+                updated = 0
                 errors = 0
-                raw_headers = []
-                # Build header names normalized to lower-case + underscored keys
+                center_skipped = 0
+                headers = []
+                # Build header names normalized to lower-case keys
                 for cell in ws[1]:
                     value = cell.value
-                    if value is None:
-                        raw_headers.append("")
-                    else:
-                        normalized = (
-                            str(value)
-                            .lower()
-                            .strip()
-                            .replace(" ", "_")
-                            .replace("-", "_")
-                        )
-                        raw_headers.append(normalized)
-
-                # Map of normalized header -> model field name. Lets the same
-                # upload code accept both the old lowercase template and the new
-                # title-case "filtered_students" download layout.
-                HEADER_ALIASES = {
-                    "course_hours": "course_hour",
-                    "center": "center_name",
-                    "caste_category": "caste_category",
-                    "course_category": "course_category",
-                    "claimable_amount": "claimable_amount",
-                    "session": "session",
-                    "claimed": "claimed",
-                }
-
-                def normalize_row(raw_dict):
-                    """Return a dict keyed by model field names."""
-                    out = {}
-                    for k, v in raw_dict.items():
-                        if not k:
-                            continue
-                        if k in HEADER_ALIASES:
-                            k = HEADER_ALIASES[k]
-                        out[k] = v
-                    return out
+                    headers.append(
+                        str(value).lower().strip() if value is not None else ""
+                    )
 
                 for row in ws.iter_rows(min_row=2, values_only=True):
-                    raw_dict = dict(zip(raw_headers, row))
-                    row_dict = normalize_row(raw_dict)
+                    row_dict = dict(zip(headers, row))
 
-                    def safe_str(val):
-                        return str(val).strip() if val is not None else ""
-
-                    aadhaar = safe_str(row_dict.get("aadhaar"))
-                    if aadhaar and studentdata.objects.filter(aadhaar=aadhaar).exists():
-                        dupes += 1
+                    row_center = str(row_dict.get("center_name") or "").strip().lower()
+                    if user_center and row_center and row_center != user_center:
+                        center_skipped += 1
                         continue
 
-                    name = safe_str(row_dict.get("name"))
-                    course = safe_str(row_dict.get("course_name"))
+                    name = row_dict.get("name")
+                    course = row_dict.get("course_name")
                     if not name or not course:
                         errors += 1
                         continue
 
-                    # Booleans: accept Yes/No, True/False, 1/0. Fall back to
-                    # presence of *_date column.
+                    # ── Match existing record (like placement logic) ──
+                    # Primary: aadhaar + course_name + batch_code
+                    # Fallback: name + course_name + batch_code
+                    aadhaar = row_dict.get("aadhaar")
+                    batch = row_dict.get("batch_code")
+                    student = None
+                    if aadhaar and course:
+                        qs = studentdata.objects.filter(
+                            aadhaar=str(aadhaar).strip(),
+                            course_name__iexact=str(course).strip(),
+                        )
+                        if batch:
+                            qs = qs.filter(batch_code__iexact=str(batch).strip())
+                        if user_center:
+                            qs = qs.filter(center_name=user_center)
+                        student = qs.first()
+
+                    if not student and name and course:
+                        qs = studentdata.objects.filter(
+                            name__iexact=str(name).strip(),
+                            course_name__iexact=str(course).strip(),
+                        )
+                        if batch:
+                            qs = qs.filter(batch_code__iexact=str(batch).strip())
+                        if user_center:
+                            qs = qs.filter(center_name=user_center)
+                        student = qs.first()
+
+                    # Booleans: prefer explicit boolean/text column, fallback to presence of date column
                     trained_bool = parse_bool(row_dict.get("trained")) or bool(
-                        safe_str(row_dict.get("trained_date"))
+                        row_dict.get("trained_date")
                     )
                     certified_bool = parse_bool(row_dict.get("certified")) or bool(
-                        safe_str(row_dict.get("certified_date"))
+                        row_dict.get("certified_date")
                     )
                     placed_bool = parse_bool(row_dict.get("placed"))
-                    claimed_bool = parse_bool(row_dict.get("claimed"))
-
-                    # NSQF: stored as "True" or empty string
-                    raw_nsqf = safe_str(row_dict.get("nsqf"))
-                    if raw_nsqf.lower() in ("true", "false"):
-                        raw_nsqf = raw_nsqf.capitalize()
-                    elif raw_nsqf.lower() in ("nsqf", "yes", "1"):
-                        raw_nsqf = "True"
-                    else:
-                        raw_nsqf = ""
 
                     # Parse numeric fields safely
                     try:
@@ -480,12 +458,12 @@ def upload(request):
 
                     # Format trained/certified dates to MON-YYYY if present
                     trained_date_val = (
-                        format_session_date(safe_str(row_dict.get("trained_date")))
+                        format_session_date(row_dict.get("trained_date"))
                         if row_dict.get("trained_date")
                         else ""
                     )
                     certified_date_val = (
-                        format_session_date(safe_str(row_dict.get("certified_date")))
+                        format_session_date(row_dict.get("certified_date"))
                         if row_dict.get("certified_date")
                         else ""
                     )
@@ -496,59 +474,58 @@ def upload(request):
                     if certified_bool and not certified_date_val:
                         certified_date_val = form_session or certified_date_val
 
-                    # Prefer the in-file Session column if it looks valid,
-                    # otherwise fall back to the dropdown session.
-                    row_session = safe_str(row_dict.get("session")).upper()
-                    if not re.fullmatch(
-                        r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)-\d{4}",
-                        row_session,
-                    ):
-                        row_session = form_session
-
-                    # Center restriction: non-admin users can only upload rows
-                    # for their own center. Skip rows that point to another center.
-                    row_center = safe_str(row_dict.get("center_name")) or ""
-                    if forced_center and row_center and row_center != forced_center:
-                        errors += 1
-                        continue
+                    def safe_str(val):
+                        return str(val).strip() if val is not None else ""
 
                     try:
-                        studentdata.objects.create(
-                            session=row_session,
-                            roll_number=safe_str(row_dict.get("roll_number")),
-                            batch_code=safe_str(row_dict.get("batch_code")),
-                            name=name,
-                            father_name=safe_str(row_dict.get("father_name")),
-                            mother_name=safe_str(row_dict.get("mother_name")),
-                            dob=dob_val,
-                            gender=safe_str(row_dict.get("gender")),
-                            address=safe_str(row_dict.get("address")),
-                            qualifications=safe_str(row_dict.get("qualifications")),
-                            aadhaar=aadhaar,
-                            course_name=course,
-                            scheme=safe_str(row_dict.get("scheme")),
-                            nsqf=raw_nsqf,
-                            course_hour=course_hour_val,
-                            mode=safe_str(row_dict.get("mode")),
-                            caste_category=safe_str(row_dict.get("caste_category")),
-                            center_name=forced_center or row_center,
-                            fee=fee_val,
-                            fee_date=fee_date_val,
-                            trained=trained_bool,
-                            trained_date=trained_date_val,
-                            certified=certified_bool,
-                            certified_date=certified_date_val,
-                            placed=placed_bool,
-                            claimed=claimed_bool,
-                        )
-                        success += 1
+                        mutable_fields = {
+                            "session": form_session,
+                            "roll_number": safe_str(row_dict.get("roll_number")),
+                            "batch_code": safe_str(row_dict.get("batch_code")),
+                            "gender": safe_str(row_dict.get("gender")),
+                            "address": safe_str(row_dict.get("address")),
+                            "qualifications": safe_str(row_dict.get("qualifications")),
+                            "scheme": safe_str(row_dict.get("scheme")),
+                            "nsqf": safe_str(row_dict.get("nsqf")),
+                            "course_hour": course_hour_val,
+                            "mode": safe_str(row_dict.get("mode")),
+                            "caste_category": safe_str(row_dict.get("caste_category")),
+                            "center_name": user_center or safe_str(row_dict.get("center_name")),
+                            "fee": fee_val,
+                            "fee_date": fee_date_val,
+                            "trained": trained_bool,
+                            "trained_date": trained_date_val,
+                            "certified": certified_bool,
+                            "certified_date": certified_date_val,
+                            "placed": placed_bool,
+                        }
+
+                        all_fields = {
+                            **mutable_fields,
+                            "name": safe_str(row_dict.get("name")),
+                            "father_name": safe_str(row_dict.get("father_name")),
+                            "mother_name": safe_str(row_dict.get("mother_name")),
+                            "dob": dob_val,
+                            "aadhaar": safe_str(row_dict.get("aadhaar")),
+                            "course_name": safe_str(row_dict.get("course_name")),
+                        }
+
+                        if student:
+                            for field, value in mutable_fields.items():
+                                setattr(student, field, value)
+                            student.save()
+                            updated += 1
+                        else:
+                            studentdata.objects.create(**all_fields)
+                            created += 1
                     except Exception as e:
                         print(f"Error on row: {e}")
                         errors += 1
 
+                skip_msg = f" | Center mismatched skipped: {center_skipped}" if center_skipped else ""
                 messages.success(
                     request,
-                    f"Uploaded: {success} | Duplicates skipped: {dupes} | Errors: {errors}",
+                    f"Created: {created} | Updated: {updated} | Errors: {errors}{skip_msg}",
                 )
             except Exception as e:
                 print(f"❌ Failed to open Excel: {e}")
@@ -561,7 +538,7 @@ def upload(request):
 
 @login_required(login_url="/login")
 def filter_students(request):
-    students = apply_filters(request.GET, user=request.user)
+    students = apply_filters(request.GET, get_student_qs(request.user))
     selected_quarter = request.GET.get("quarterly")  # Get selected quarter for claimable amount calculation
     page = int(request.GET.get("page", 1))
     limit = int(request.GET.get("limit", 10))
@@ -585,112 +562,120 @@ def filter_students(request):
 
 @login_required(login_url="/login")
 def download_filtered_data(request):
-    students = apply_filters(request.GET, user=request.user)
-    selected_quarter = request.GET.get("quarterly")  # Get selected quarter for claimable amount calculation
+    try:
+        students = apply_filters(request.GET, get_student_qs(request.user))
+        selected_quarter = request.GET.get("quarterly")  # Get selected quarter for claimable amount calculation
+        print(f"DEBUG: students count {len(students) if isinstance(students, list) else students.count()}, quarter: {selected_quarter}")
 
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Filtered Students"
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Filtered Students"
 
-    headers = [
-        "Roll Number",
-        "Batch Code",
-        "Name",
-        "Father Name",
-        "Mother Name",
-        "DOB",
-        "Gender",
-        "Address",
-        "Qualifications",
-        "Aadhaar",
-        "Course Name",
-        "Scheme",
-        "NSQF",
-        "Course Hours",
-        "Course Category",
-        "Center",
-        "Mode",
-        "Caste Category",
-        "Fee",
-        "Claimable Amount",
-        "Fee Date",
-        "Trained",
-        "Trained Date",
-        "Certified",
-        "Certified Date",
-        "Placed",
-        "Claimed",
-        "Session",
-    ]
-    for col, h in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=h)
-        cell.font = Font(bold=True)
-        cell.fill = PatternFill(
-            start_color="CCCCCC", end_color="CCCCCC", fill_type="solid"
+        headers = [
+            "Roll Number",
+            "Batch Code",
+            "Name",
+            "Father Name",
+            "Mother Name",
+            "DOB",
+            "Gender",
+            "Address",
+            "Qualifications",
+            "Aadhaar",
+            "Course Name",
+            "Scheme",
+            "NSQF",
+            "Course Hours",
+            "Course Category",
+            "Center",
+            "Mode",
+            "Caste Category",
+            "Fee",
+            "Claimable Amount",
+            "Fee Date",
+            "Trained",
+            "Trained Date",
+            "Certified",
+            "Certified Date",
+            "Placed",
+            "Claimed",
+            "Session",
+        ]
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(
+                start_color="CCCCCC", end_color="CCCCCC", fill_type="solid"
+            )
+
+        yn = lambda v: "Yes" if v else "No"
+        for row, s in enumerate(students, 2):
+            # Calculate claimable amount based on selected quarter if provided
+            if selected_quarter:
+                claimable = s.get_claimable_amount_for_quarter(selected_quarter)
+            else:
+                claimable = s.claimable_amount
+            
+            for col, val in enumerate(
+                [
+                    s.roll_number,
+                    s.batch_code,
+                    s.name,
+                    s.father_name,
+                    s.mother_name,
+                    s.dob.strftime("%Y-%m-%d") if s.dob else "",
+                    s.gender,
+                    s.address,
+                    s.qualifications,
+                    s.aadhaar,
+                    s.course_name,
+                    s.scheme,
+                    s.nsqf,
+                    s.course_hour,
+                    s.course_category,
+                    s.center_name,
+                    s.mode,
+                    s.caste_category,
+                    float(s.fee),
+                    float(claimable),
+                    str(s.fee_date) if s.fee_date else "",
+                    yn(s.trained),
+                    s.trained_date,
+                    yn(s.certified),
+                    s.certified_date,
+                    yn(s.placed),
+                    yn(s.claimed),
+                    s.session,
+                ],
+                1,
+            ):
+                ws.cell(row=row, column=col, value=val)
+
+        for col in ws.columns:
+            ws.column_dimensions[col[0].column_letter].width = min(
+                max((len(str(c.value)) for c in col if c.value), default=0) + 2, 50
+            )
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        response["Content-Disposition"] = "attachment; filename=filtered_students.xlsx"
+        wb.save(response)
+        return response
 
-    yn = lambda v: "Yes" if v else "No"
-    for row, s in enumerate(students, 2):
-        # Calculate claimable amount based on selected quarter if provided
-        if selected_quarter:
-            claimable = s.get_claimable_amount_for_quarter(selected_quarter)
-        else:
-            claimable = s.claimable_amount
-        
-        for col, val in enumerate(
-            [
-                s.roll_number,
-                s.batch_code,
-                s.name,
-                s.father_name,
-                s.mother_name,
-                s.dob.strftime("%Y-%m-%d") if s.dob else "",
-                s.gender,
-                s.address,
-                s.qualifications,
-                s.aadhaar,
-                s.course_name,
-                s.scheme,
-                s.nsqf,
-                s.course_hour,
-                s.course_category,
-                s.center_name,
-                s.mode,
-                s.caste_category,
-                float(s.fee),
-                float(claimable),
-                str(s.fee_date) if s.fee_date else "",
-                yn(s.trained),
-                s.trained_date,
-                yn(s.certified),
-                s.certified_date,
-                yn(s.placed),
-                yn(s.claimed),
-                s.session,
-            ],
-            1,
-        ):
-            ws.cell(row=row, column=col, value=val)
-
-    for col in ws.columns:
-        ws.column_dimensions[col[0].column_letter].width = min(
-            max((len(str(c.value)) for c in col if c.value), default=0) + 2, 50
-        )
-
-    response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response["Content-Disposition"] = "attachment; filename=filtered_students.xlsx"
-    wb.save(response)
-    return response
+    except Exception as e:
+        print(f"DEBUG: Error in download_filtered_data: {e}")
+        print(traceback.format_exc())
+        return HttpResponse("Error processing download", status=500)
 
 
 # ─── Report ──────────────────────────────────────────────────────────────────
 
 
-def _session_filter_options():
+def _session_filter_options(base_qs=None):
+    qs = base_qs if base_qs is not None else studentdata.objects.all()
     sessions = list(
-        studentdata.objects.values_list("session", flat=True)
+        qs.values_list("session", flat=True)
         .distinct()
         .order_by("-session")
     )
@@ -702,12 +687,7 @@ def _session_filter_options():
 @login_required(login_url="/login")
 def download(request):
     p = request.GET
-    students = studentdata.objects.all()
-    # Enforce center restriction for non-superuser users
-    if not request.user.is_superuser:
-        profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        if profile.center_name:
-            students = students.filter(center_name=profile.center_name)
+    students = get_student_qs(request.user)
     for key in ["year", "session"]:
         if p.get(key):
             students = students.filter(session__icontains=p[key])
@@ -731,9 +711,7 @@ def download(request):
                     for c in ["GENERAL", "OBC", "SC", "ST", "PWD"]
                 },
             }
-        caste = s.caste_category or "GENERAL"
-        if caste not in grouped[key]:
-            grouped[key][caste] = {"trained": 0, "certified": 0, "placed": 0, "total": 0}
+        caste = s.caste_category if s.caste_category in grouped[key] else "GENERAL"
         g = grouped[key][caste]
         g["total"] += 1
         if s.trained_date:
@@ -754,7 +732,7 @@ def download(request):
                 totals[c][k] += item[c][k]
     totals["grand_total"] = sum(totals[c]["total"] for c in castes)
 
-    years, months = _session_filter_options()
+    years, months = _session_filter_options(get_student_qs(request.user))
     return render(
         request,
         "download.html",
@@ -774,12 +752,7 @@ def download(request):
 @login_required(login_url="/login")
 def api_download_data(request):
     p = request.GET
-    students = studentdata.objects.all()
-    # Enforce center restriction for non-superuser users
-    if not request.user.is_superuser:
-        profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        if profile.center_name:
-            students = students.filter(center_name=profile.center_name)
+    students = get_student_qs(request.user)
     for key in ["year", "session"]:
         if p.get(key):
             students = students.filter(session__icontains=p[key])
@@ -823,13 +796,9 @@ def update_student(request, student_id):
     except studentdata.DoesNotExist:
         return JsonResponse({"error": "Student not found"}, status=404)
 
-    # Block center-restricted users from editing students outside their center
-    if not request.user.is_superuser:
-        profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        if profile.center_name and student.center_name != profile.center_name:
-            return JsonResponse(
-                {"error": "You do not have access to edit this student."}, status=403
-            )
+    profile = getattr(request.user, "profile", None)
+    if profile and profile.center and student.center_name != profile.center:
+        return JsonResponse({"error": "Access denied"}, status=403)
 
     try:
         body = json.loads(request.body)
@@ -931,19 +900,10 @@ def update_student(request, student_id):
 
 @login_required(login_url="/login")
 def inputView(request):
-    is_admin = request.user.is_superuser
-    forced_center = None
-    if not is_admin:
-        profile, _ = UserProfile.objects.get_or_create(user=request.user)
-        forced_center = profile.center_name
-
     if request.method == "POST":
-        form = StudentDataForm(request.POST, user=request.user)
+        form = StudentDataForm(request.POST)
         if form.is_valid():
             student = form.save(commit=False)
-            # Force center for non-admin users (don't trust POST data)
-            if forced_center:
-                student.center_name = forced_center
             if student.trained and not student.trained_date:
                 student.trained_date = student.session
             if student.certified and not student.certified_date:
@@ -951,7 +911,7 @@ def inputView(request):
             student.save()
             return redirect("dashboard")
     else:
-        form = StudentDataForm(user=request.user)
+        form = StudentDataForm()
 
     return render(
         request,
@@ -980,217 +940,40 @@ def inputView(request):
 # ─── Overview ────────────────────────────────────────────────────────────────
 
 
-def _overview_context(request_or_params, user=None, selected_session=""):
-    """
-    Build the overview page context with support for many filters:
-      session, year, quarter, center, course, mode, caste, scheme, nsqf, status
-    """
-    # Accept either a request or a plain dict of params
-    if hasattr(request_or_params, "GET"):
-        params = request_or_params.GET
-    else:
-        params = request_or_params
-
-    if user is None and hasattr(request_or_params, "user"):
-        user = request_or_params.user
-
-    # Get the user's center restriction
-    user_center = None
-    if user and not user.is_superuser:
-        profile, _ = UserProfile.objects.get_or_create(user=user)
-        user_center = profile.center_name
-
-    students = studentdata.objects.all()
-
-    # Hard restriction for center-restricted users
-    if user_center:
-        students = students.filter(center_name=user_center)
-
+def _overview_context(selected_session, user=None):
+    base_qs = get_student_qs(user) if user else studentdata.objects.all()
+    students = base_qs
     if selected_session:
         students = students.filter(session=selected_session)
 
-    # Year filter
-    year = params.get("year") if params else None
-    if year:
-        students = students.filter(
-            Q(trained_date__contains=year) | Q(certified_date__contains=year)
-        )
-
-    # Quarter filter
-    quarter = params.get("quarter") if params else None
-    if quarter:
-        qmap = {
-            "Q1": ["APR", "MAY", "JUN"],
-            "Q2": ["JUL", "AUG", "SEP"],
-            "Q3": ["OCT", "NOV", "DEC"],
-            "Q4": ["JAN", "FEB", "MAR"],
-        }
-        months = qmap.get(quarter, [])
-        w = Q()
-        for m in months:
-            w = w | Q(trained_date__startswith=f"{m}-") | Q(
-                certified_date__startswith=f"{m}-"
-            )
-        students = students.filter(w)
-
-    # Center filter (admin only - center users already restricted)
-    if not user_center:
-        center = params.get("center") if params else None
-        if center:
-            students = students.filter(center_name=center)
-
-    # Course filter
-    course = params.get("course") if params else None
-    if course:
-        students = students.filter(course_name=course)
-
-    # Mode filter
-    mode = params.get("mode") if params else None
-    if mode:
-        students = students.filter(mode=mode)
-
-    # Caste filter
-    caste = params.get("caste") if params else None
-    if caste:
-        students = students.filter(caste_category=caste)
-
-    # Scheme filter
-    scheme = params.get("scheme") if params else None
-    if scheme:
-        students = students.filter(scheme=scheme)
-
-    # NSQF filter
-    nsqf = params.get("nsqf") if params else None
-    if nsqf == "yes":
-        students = students.filter(nsqf__regex=r".+")
-    elif nsqf == "no":
-        students = students.filter(nsqf__in=[None, ""])
-
-    # Status filters (trained/certified/placed/claimed)
-    def _bool(v):
-        return v in (True, "true", "True", "1", 1, "yes", "Yes")
-
-    trained = params.get("trained") if params else None
-    if trained in ("true", "True", "1", True, 1):
-        students = students.filter(trained=True)
-    elif trained in ("false", "False", "0", False, 0):
-        students = students.filter(trained=False)
-
-    certified = params.get("certified") if params else None
-    if certified in ("true", "True", "1", True, 1):
-        students = students.filter(certified=True)
-    elif certified in ("false", "False", "0", False, 0):
-        students = students.filter(certified=False)
-
-    placed = params.get("placed") if params else None
-    if placed in ("true", "True", "1", True, 1):
-        students = students.filter(placed=True)
-    elif placed in ("false", "False", "0", False, 0):
-        students = students.filter(placed=False)
-
-    claimed = params.get("claimed") if params else None
-    if claimed in ("true", "True", "1", True, 1):
-        students = students.filter(claimed=True)
-    elif claimed in ("false", "False", "0", False, 0):
-        students = students.filter(claimed=False)
-
-    # Build the list of centers the user is allowed to see
-    visible_centers = [user_center] if user_center else CENTERS
-
-    # Status totals
-    trained_count = students.filter(trained=True).count()
-    certified_count = students.filter(certified=True).count()
-    placed_count = students.filter(placed=True).count()
-    claimed_count = students.filter(claimed=True).count()
-    total_count = students.count()
-    total_fee = students.aggregate(s=models.Sum("fee"))["s"] or 0
-    total_claimable = (
-        students.aggregate(s=models.Sum("claimable_amount"))["s"] or 0
-    )
-    total_claimed_amount = (
-        students.filter(claimed=True)
-        .aggregate(s=models.Sum("claimable_amount"))["s"]
-        or 0
-    )
-
-    # Distinct values for filter dropdowns (always from the full unrestricted pool
-    # so admins can still see all options)
-    full_qs = studentdata.objects.all()
-    if user_center:
-        full_qs = full_qs.filter(center_name=user_center)
-    sessions = list(
-        full_qs.values_list("session", flat=True).distinct().order_by("-session")
-    )
-    courses = list(
-        full_qs.values_list("course_name", flat=True).distinct().order_by("course_name")
-    )
-    schemes = list(
-        full_qs.exclude(scheme__isnull=True)
-        .exclude(scheme__exact="")
-        .values_list("scheme", flat=True)
-        .distinct()
-        .order_by("scheme")
-    )
-    years_set = set()
-    for d in full_qs.values_list("trained_date", "certified_date"):
-        for v in d:
-            if v and "-" in v:
-                parts = v.split("-")
-                if len(parts) == 2 and parts[1].isdigit():
-                    years_set.add(parts[1])
-    years = sorted(years_set, reverse=True)
-
     return {
-        "all_record": total_count,
-        "trained_count": trained_count,
-        "certified_count": certified_count,
-        "placed_count": placed_count,
-        "claimed_count": claimed_count,
-        "total_fee": float(total_fee),
-        "total_claimable": float(total_claimable),
-        "total_claimed_amount": float(total_claimed_amount),
+        "all_record": students.count(),
         "centers": [
             {
                 "name": n.capitalize(),
                 "stats": center_summary(students.filter(center_name=n)),
             }
-            for n in visible_centers
+            for n in CENTERS
         ],
-        "sessions": sessions,
-        "courses": courses,
-        "schemes": schemes,
-        "years": years,
+        "sessions": list(
+            base_qs.values_list("session", flat=True)
+            .distinct()
+            .order_by("-session")
+        ),
         "selected_session": selected_session,
-        "selected_filters": {
-            "year": year or "",
-            "quarter": quarter or "",
-            "center": "" if user_center else (params.get("center") if params else "") or "",
-            "course": course or "",
-            "mode": mode or "",
-            "caste": caste or "",
-            "scheme": scheme or "",
-            "nsqf": nsqf or "",
-            "trained": trained or "",
-            "certified": certified or "",
-            "placed": placed or "",
-            "claimed": claimed or "",
-        },
-        "user_center": user_center or "",
-        "is_admin": bool(user and user.is_superuser),
     }
 
 
 @login_required(login_url="/login")
 def overview(request):
-    ctx = _overview_context(request, request.user, request.GET.get("session", ""))
+    ctx = _overview_context(request.GET.get("session", ""), user=request.user)
     ctx["centers"] = [(c["name"], c["stats"]) for c in ctx["centers"]]
     return render(request, "overview.html", ctx)
 
 
 @login_required(login_url="/login")
 def overview_data(request):
-    ctx = _overview_context(request, request.user, request.GET.get("session", ""))
-    return JsonResponse(ctx)
+    return JsonResponse(_overview_context(request.GET.get("session", ""), user=request.user))
 
 
 def courses(request):
@@ -1230,49 +1013,30 @@ from .models import studentdata
 
 @login_required(login_url="/login")
 def sample_upload(request):
-    """
-    Returns an Excel template that matches the layout of the
-    'filtered_students' download exactly, so the file can be re-uploaded
-    round-trip without any column re-mapping.
 
-    Columns (Title Case, same as filtered_students download):
-        Roll Number, Batch Code, Name, Father Name, Mother Name, DOB,
-        Gender, Address, Qualifications, Aadhaar, Course Name, Scheme,
-        NSQF, Course Hours, Course Category, Center, Mode, Caste Category,
-        Fee, Claimable Amount, Fee Date, Trained, Trained Date, Certified,
-        Certified Date, Placed, Claimed, Session
-    """
-
-    # Title-case headers matching the filtered_students download output
     headers = [
-        "Roll Number",
-        "Batch Code",
-        "Name",
-        "Father Name",
-        "Mother Name",
-        "DOB",
-        "Gender",
-        "Address",
-        "Qualifications",
-        "Aadhaar",
-        "Course Name",
-        "Scheme",
-        "NSQF",
-        "Course Hours",
-        "Course Category",
-        "Center",
-        "Mode",
-        "Caste Category",
-        "Fee",
-        "Claimable Amount",
-        "Fee Date",
-        "Trained",
-        "Trained Date",
-        "Certified",
-        "Certified Date",
-        "Placed",
-        "Claimed",
-        "Session",
+        "roll_number",
+        "batch_code",
+        "name",
+        "father_name",
+        "mother_name",
+        "dob",
+        "gender",
+        "address",
+        "qualifications",
+        "aadhaar",
+        "course_name",
+        "scheme",
+        "nsqf",
+        "course_hour",
+        "mode",
+        "caste_category",
+        "center_name",
+        "fee",
+        "fee_date",
+        "trained_date",
+        "certified_date",
+        "placed",
     ]
 
     wb = openpyxl.Workbook()
@@ -1282,10 +1046,7 @@ def sample_upload(request):
     col_num = 1
     for header in headers:
         cell = ws.cell(row=1, column=col_num, value=header)
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill(
-            start_color="0E2238", end_color="0E2238", fill_type="solid"
-        )
+        cell.font = Font(bold=True)
         col_num = col_num + 1
 
     ws.freeze_panes = "A2"
@@ -1309,110 +1070,87 @@ def sample_upload(request):
 
         dv.add(f"{col_letter}2:{col_letter}1048576")
 
-    # Build dropdown options from the model's choice tuples
-    centers = [c[1] for c in studentdata.CENTER_CHOICES]
-    caste_choices = [c[1] for c in studentdata.CASTE_CHOICES]
-    mode_choices = [c[1] for c in studentdata.MODE_CHOICES]
-    gender_choices = [c[1] for c in studentdata.GENDER]
-    nsqf_choices = ["True", "False"]
-    course_choices = [c[1] for c in studentdata.COURSE_CHOICES]
-    qualification_choices = [c[1] for c in studentdata.HIGHEST_QUALIFICATION]
+    schemes_qs = get_student_qs(request.user).values_list("scheme", flat=True).distinct()
 
-    # Schemes: pull distinct values from existing data, plus a "NON-NSQF" fallback
     scheme_options = []
-    for s in studentdata.objects.values_list("scheme", flat=True).distinct():
-        if s:
+    for s in schemes_qs:
+        if s != None:
             scheme_options.append(s)
-    if not scheme_options:
-        scheme_options = ["NON-NSQF"]
+        else:
+            scheme_options.append("NON-NSQF")
 
-    yes_no = ["Yes", "No"]
+    centers = []
+    for i in studentdata.CENTER_CHOICES:
+        centers.append(i[1])
 
-    add_dropdown("Center", centers)
-    add_dropdown("Mode", mode_choices)
-    add_dropdown("Caste Category", caste_choices)
-    add_dropdown("Gender", gender_choices)
-    add_dropdown("NSQF", nsqf_choices)
-    add_dropdown("Scheme", scheme_options)
-    add_dropdown("Course Name", course_choices)
-    add_dropdown("Qualifications", qualification_choices)
-    add_dropdown("Trained", yes_no)
-    add_dropdown("Certified", yes_no)
-    add_dropdown("Placed", yes_no)
-    add_dropdown("Claimed", yes_no)
+    caste_choices = []
+    for i in studentdata.CASTE_CHOICES:
+        caste_choices.append(i[1])
 
-    # Sample row matching the filtered_students output format
+    mode_choices = []
+    for i in studentdata.MODE_CHOICES:
+        mode_choices.append(i[1])
+
+    gender_choices = []
+    for i in studentdata.GENDER:
+        gender_choices.append(i[1])
+
+    nsqf_choices = []
+    for i in studentdata.NSQF_LEVEL:
+        nsqf_choices.append(i[1])
+
+    course_choioces = []
+
+    for i in studentdata.COURSE_CHOICES:
+        course_choioces.append(i[1])
+
+    qualification_choices = []
+    for i in studentdata.HIGHEST_QUALIFICATION:
+        qualification_choices.append(i[1])
+    add_dropdown("center_name", centers)
+    add_dropdown("mode", mode_choices)
+    add_dropdown("caste_category", caste_choices)
+    add_dropdown("placed", ["True", "False"])
+    add_dropdown("gender", gender_choices)
+    add_dropdown("nsqf", nsqf_choices)
+    add_dropdown("scheme", scheme_options)
+    add_dropdown("course_name", course_choioces)
+    add_dropdown("qualifications", qualification_choices)
+
     sample_row = [
-        "NIELIT0001",            # Roll Number
-        "FA-009",                # Batch Code
-        "AASHISH KUMAR",         # Name
-        "RAKESH KUMAR",          # Father Name
-        "UMA",                   # Mother Name
-        "2005-01-12",            # DOB
-        "Male",                  # Gender
-        "WEST DELHI  ,DELHI",    # Address
-        "Graduation (B.Sc / B.Com / BA / BBA)",  # Qualifications
-        "120230108482",          # Aadhaar
-        "FSK Prime Bootcamp on AI",  # Course Name
-        "Future Skill Prime",    # Scheme
-        "False",                 # NSQF
-        "40",                    # Course Hours
-        "D - Short Term Course", # Course Category
-        "inderlok",              # Center
-        "offline",               # Mode
-        "SC",                    # Caste Category
-        "2000",                  # Fee
-        "0",                     # Claimable Amount
-        "",                      # Fee Date
-        "Yes",                   # Trained
-        "APR-2025",              # Trained Date
-        "Yes",                   # Certified
-        "APR-2025",              # Certified Date
-        "No",                    # Placed
-        "No",                    # Claimed
-        "APR-2025",              # Session
+        "NIELIT0001",
+        "Batch-2024-001",
+        "Aarav Sharma",
+        "Rajesh Sharma",
+        "Sunita Sharma",
+        "1998-05-12",
+        "Male",
+        "12/4 Rohini Delhi",
+        "Graduation",
+        "123456789012",
+        "Python Programming",
+        "PMKVY",
+        "Level 4",
+        "120",
+        "offline",
+        "OBC",
+        "inderlok",
+        "5000",
+        "2024-01-10",
+        "JAN-2024",
+        "MAR-2024",
+        "TRUE",
     ]
     sample_col = 1
     for value in sample_row:
         ws.cell(row=2, column=sample_col, value=value)
         sample_col = sample_col + 1
 
-    # Per-column widths for readability
-    column_widths = {
-        "Roll Number": 14,
-        "Batch Code": 16,
-        "Name": 28,
-        "Father Name": 22,
-        "Mother Name": 22,
-        "DOB": 13,
-        "Gender": 10,
-        "Address": 30,
-        "Qualifications": 28,
-        "Aadhaar": 16,
-        "Course Name": 32,
-        "Scheme": 22,
-        "NSQF": 10,
-        "Course Hours": 10,
-        "Course Category": 22,
-        "Center": 14,
-        "Mode": 10,
-        "Caste Category": 14,
-        "Fee": 10,
-        "Claimable Amount": 16,
-        "Fee Date": 13,
-        "Trained": 10,
-        "Trained Date": 14,
-        "Certified": 10,
-        "Certified Date": 14,
-        "Placed": 10,
-        "Claimed": 10,
-        "Session": 12,
-    }
-    for col in range(1, len(headers) + 1):
+    col = 1
+    while col <= len(headers):
         letter = get_column_letter(col)
-        ws.column_dimensions[letter].width = column_widths.get(
-            headers[col - 1], 16
-        )
+        ws.column_dimensions[letter].width = 18
+        col = col + 1
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -1422,3 +1160,258 @@ def sample_upload(request):
     )
     wb.save(response)
     return response
+
+
+PLACEMENT_COLUMN_ALIASES = {
+    "student name": "name",
+    "student id": "aadhaar",
+    "course/branch": "course_name",
+    "semester/batch": "batch_code",
+    "centre/campus": "center_name",
+    "offer received (y/n)": "offer_received",
+    "selection status": "selection_status",
+    "opportunity type (internship/placement)": "opportunity_type",
+    "company/organization": "company",
+    "job title/role": "job_title",
+    "source of opportunity": "source",
+    "date applied": "date_applied",
+    "joining date": "joining_date",
+    "current status": "current_status",
+    "s. no.": "s_no",
+}
+
+
+def _normalize_placement_headers(headers):
+    norm = []
+    for h in headers:
+        key = h.lower().strip().replace("\n", " ").replace("\r", " ")
+        key = re.sub(r"\s+", " ", key)
+        norm.append(PLACEMENT_COLUMN_ALIASES.get(key, key))
+    return norm
+
+
+def _parse_offer_received(val):
+    if val is None:
+        return None
+    s = str(val).strip().upper()
+    return s in ("Y", "YES", "TRUE", "1")
+
+
+def _parse_selection_status(val):
+    if val is None:
+        return None
+    s = str(val).strip().lower()
+    return s in ("selected", "offered", "placed")
+
+
+@login_required(login_url="/login")
+def upload_placement_records(request):
+    profile = getattr(request.user, "profile", None)
+    user_center = profile.center if profile and profile.center else None
+
+    if request.method == "POST":
+        form = PlacementUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            uploaded_file = request.FILES.get("file")
+            try:
+                wb = openpyxl.load_workbook(uploaded_file, data_only=True)
+                ws = wb.active
+                created = 0
+                updated = 0
+                not_found = 0
+                errors = 0
+                skipped = 0
+
+                raw_headers = []
+                for cell in ws[1]:
+                    value = cell.value
+                    raw_headers.append(
+                        str(value).strip() if value is not None else ""
+                    )
+                headers = _normalize_placement_headers(raw_headers)
+
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    row_dict = dict(zip(headers, row))
+
+                    placed_bool = None
+                    offer = _parse_offer_received(row_dict.get("offer_received"))
+                    if offer is not None:
+                        placed_bool = offer
+                    else:
+                        status = _parse_selection_status(row_dict.get("selection_status"))
+                        if status is not None:
+                            placed_bool = status
+
+                    if placed_bool is None:
+                        skipped += 1
+                        continue
+
+                    def csv(val):
+                        return str(val).strip() if val is not None else ""
+
+                    try:
+                        student = None
+                        aadhaar_val = row_dict.get("aadhaar")
+                        if aadhaar_val:
+                            qs = studentdata.objects.filter(aadhaar=str(aadhaar_val).strip())
+                            if user_center:
+                                qs = qs.filter(center_name=user_center)
+                            student = qs.first()
+
+                        if not student:
+                            name_val = row_dict.get("name")
+                            batch_val = row_dict.get("batch_code")
+                            center_val = row_dict.get("center_name")
+                            if name_val and batch_val:
+                                qs = studentdata.objects.filter(
+                                    name__iexact=str(name_val).strip(),
+                                    batch_code__iexact=str(batch_val).strip(),
+                                )
+                                if user_center:
+                                    qs = qs.filter(center_name=user_center)
+                                elif center_val:
+                                    qs = qs.filter(center_name=str(center_val).strip().lower())
+                                student = qs.first()
+
+                        # Update placed on studentdata if found
+                        if student:
+                            student.placed = placed_bool
+                            student.save()
+
+                        # ── Match or create PlacementRecord ──
+                        match_qs = PlacementRecord.objects.filter(
+                            student_name__iexact=csv(row_dict.get("name")),
+                            aadhaar=csv(row_dict.get("aadhaar")),
+                            course_name__iexact=csv(row_dict.get("course_name")),
+                        )
+                        if user_center:
+                            match_qs = match_qs.filter(center_name=user_center)
+
+                        pr = match_qs.first()
+                        pr_data = {
+                            "student": student,
+                            "student_name": csv(row_dict.get("name")),
+                            "aadhaar": csv(row_dict.get("aadhaar")),
+                            "course_name": csv(row_dict.get("course_name")),
+                            "batch_code": csv(row_dict.get("batch_code")),
+                            "center_name": user_center or csv(row_dict.get("center_name")),
+                            "opportunity_type": csv(row_dict.get("opportunity_type")),
+                            "selection_status": csv(row_dict.get("selection_status")),
+                            "offer_received": placed_bool,
+                            "company": csv(row_dict.get("company")),
+                            "job_title": csv(row_dict.get("job_title")),
+                            "source": csv(row_dict.get("source")),
+                            "date_applied": csv(row_dict.get("date_applied")),
+                            "joining_date": csv(row_dict.get("joining_date")),
+                            "current_status": csv(row_dict.get("current_status")),
+                            "placed": placed_bool,
+                        }
+
+                        if pr:
+                            for field, value in pr_data.items():
+                                setattr(pr, field, value)
+                            pr.save()
+                            updated += 1
+                        else:
+                            PlacementRecord.objects.create(**pr_data)
+                            created += 1
+                    except Exception:
+                        errors += 1
+
+                parts = [f"Created: {created} | Updated: {updated}"]
+                if not_found:
+                    parts.append(f"Student link not found: {not_found}")
+                if skipped:
+                    parts.append(f"Skipped (no placement status): {skipped}")
+                if errors:
+                    parts.append(f"Errors: {errors}")
+                messages.success(request, " | ".join(parts))
+            except Exception as e:
+                messages.error(request, f"Error processing file: {str(e)}")
+        else:
+            messages.error(request, "Invalid form submission.")
+    else:
+        form = PlacementUploadForm()
+
+    return placement_view(request, upload_form=form)
+
+
+@login_required(login_url="/login")
+def placement_view(request, upload_form=None):
+    profile = getattr(request.user, "profile", None)
+    user_center = profile.center if profile and profile.center else None
+    if upload_form is None:
+        upload_form = PlacementUploadForm()
+    return render(request, "placement.html", {"user_center": user_center, "upload_form": upload_form})
+
+
+def placement_record_to_dict(r):
+    return {
+        "id": r.id,
+        "student_name": r.student_name or "-",
+        "aadhaar": r.aadhaar or "-",
+        "course_name": r.course_name or "-",
+        "batch_code": (r.batch_code or "").upper() or "-",
+        "center_name": r.center_name or "-",
+        "opportunity_type": r.opportunity_type or "-",
+        "selection_status": r.selection_status or "-",
+        "company": r.company or "-",
+        "job_title": r.job_title or "-",
+        "source": r.source or "-",
+        "date_applied": r.date_applied or "-",
+        "joining_date": r.joining_date or "-",
+        "current_status": r.current_status or "-",
+        "placed": r.placed,
+        "created_at": r.created_at.isoformat() if r.created_at else "",
+    }
+
+
+@login_required(login_url="/login")
+def filter_placement(request):
+    profile = getattr(request.user, "profile", None)
+    user_center = profile.center if profile and profile.center else None
+    base_qs = PlacementRecord.objects.all()
+    if user_center:
+        base_qs = base_qs.filter(center_name=user_center)
+
+    batch = request.GET.get("batch", "").strip()
+    name = request.GET.get("name", "").strip()
+    course = request.GET.get("course", "").strip()
+    center = request.GET.get("center", "").strip()
+    placed = request.GET.get("placed", "").strip()
+    company = request.GET.get("company", "").strip()
+    opportunity = request.GET.get("opportunity", "").strip()
+
+    if batch:
+        base_qs = base_qs.filter(batch_code__icontains=batch)
+    if name:
+        base_qs = base_qs.filter(student_name__icontains=name)
+    if course:
+        base_qs = base_qs.filter(course_name__icontains=course)
+    if center:
+        base_qs = base_qs.filter(center_name=center)
+    if placed:
+        base_qs = base_qs.filter(placed=parse_bool(placed))
+    if company:
+        base_qs = base_qs.filter(company__icontains=company)
+    if opportunity:
+        base_qs = base_qs.filter(opportunity_type__iexact=opportunity)
+
+    page = int(request.GET.get("page", 1))
+    limit = int(request.GET.get("limit", 10))
+    offset = (page - 1) * limit
+    total = base_qs.count()
+
+    results = [placement_record_to_dict(r) for r in base_qs[offset : offset + limit]]
+
+    return JsonResponse({
+        "results": results,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total_count": total,
+            "total_pages": (total + limit - 1) // limit if limit > 0 else 0,
+            "has_next": page < (total + limit - 1) // limit if limit > 0 else False,
+            "has_prev": page > 1,
+        },
+    })

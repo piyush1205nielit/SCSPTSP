@@ -16,12 +16,6 @@ python -m pip install gunicorn -q
 
 python manage.py migrate --noinput
 
-# Create/refresh the 4 portal users (admin + 3 center users)
-python manage.py create_center_users
-
-# Recalculate claimable_amount for all existing rows
-python manage.py recalc_claimable
-
 python manage.py collectstatic --noinput --clear
 
 sudo systemctl daemon-reload

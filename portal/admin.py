@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import studentdata , NsqfElectronics  ,NsqfIT ,Dlc , UserProfile
+from .models import studentdata, NsqfElectronics, NsqfIT, Dlc, PlacementRecord
 from import_export.admin import ImportExportModelAdmin
 # Register your models here.
 
@@ -15,30 +15,37 @@ class StudentDataAdmin(ImportExportModelAdmin):
     "qualifications",
     "address",
     "aadhaar",
-    "course_name",
-    "course_hour",
+    "course_name",    
+    "course_hour",  
     "course_category",
-    "scheme",
-    "nsqf",
-    "mode",
-    "caste_category",
-    "center_name",
-    "fee",
+    "scheme",       
+    "nsqf",     
+    "mode",         
+    "caste_category", 
+    "center_name",    
+    "fee",         
     "claimable_amount",
     "fee_date",
-    "trained",
-    "trained_date",
-    "certified",
-    "certified_date",
+    "trained",       
+    "trained_date",    
+    "certified",     
+    "certified_date",  
     "placed"
-      ]
+      ]   
 
-class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "center_name")
-    list_filter = ("center_name",)
-
-admin.site.register(studentdata,StudentDataAdmin)
+admin.site.register(studentdata, StudentDataAdmin)
 admin.site.register(NsqfIT)
 admin.site.register(NsqfElectronics)
 admin.site.register(Dlc)
-admin.site.register(UserProfile, UserProfileAdmin)
+
+
+class PlacementRecordAdmin(admin.ModelAdmin):
+    list_display = [
+        "student_name", "aadhaar", "course_name", "batch_code",
+        "opportunity_type", "company", "job_title", "placed", "created_at",
+    ]
+    list_filter = ["placed", "opportunity_type", "center_name"]
+    search_fields = ["student_name", "aadhaar", "company", "course_name"]
+
+
+admin.site.register(PlacementRecord, PlacementRecordAdmin)

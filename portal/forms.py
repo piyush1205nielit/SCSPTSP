@@ -1,10 +1,16 @@
-from django import forms
-from .models import studentdata 
 from datetime import datetime
 
-# ModelForm for studentdata
 from django import forms
+
 from .models import studentdata
+
+
+class PlacementUploadForm(forms.Form):
+    file = forms.FileField(
+        label="Upload Placement Excel File",
+        widget=forms.FileInput(attrs={"class": "file-input"}),
+    )
+
 
 class StudentDataForm(forms.ModelForm):
     trained_date = forms.DateField(required=False, widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}))
@@ -54,22 +60,9 @@ class StudentDataForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         # Make roll_number optional
         self.fields['roll_number'].required = False
-        # Restrict center choices for non-superuser users
-        if self.user and not self.user.is_superuser:
-            try:
-                from .models import UserProfile
-                profile = UserProfile.objects.filter(user=self.user).first()
-                if profile and profile.center_name:
-                    center = profile.center_name
-                    self.fields["center_name"].choices = [
-                        (center, dict(studentdata.CENTER_CHOICES)[center])
-                    ]
-            except Exception:
-                pass
 class ExcelUploadForm(forms.Form):
     # Generate years from 2020 to current year + 1
     current_year = datetime.now().year
