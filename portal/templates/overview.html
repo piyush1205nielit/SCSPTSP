@@ -1,241 +1,209 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid px-3">
-    <!-- Header Section -->
-    <div class="mb-2">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2 class="fw-bold m-0" style="color: #1a1a1a; font-size: 1.8rem;">Student Overview</h2>
-                <p class="text-muted small mt-1 mb-0">Comprehensive statistics and enrollment data</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filter and Total Section -->
-    <div class="row mb-3 align-items-center">
-        <div class="col-md-4 col-lg-3">
-            <label for="sessionSelect" class="form-label fw-bold small text-dark mb-1">Filter by Session</label>
-            <select id="sessionSelect" class="form-select form-select-sm rounded-2 border-1" style="border-color: #dee2e6;">
-                <option value="">📅 All Sessions</option>
-                {% for session in sessions %}
-                    <option value="{{ session }}" {% if selected_session == session %}selected{% endif %}>{{ session }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-8 col-lg-9">
-            <div class="card border-0 shadow-sm rounded-2 overflow-hidden" style="background-color: #0e2238;">
-                <div class="p-2">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <p class="mb-0 fw-semibold text-white small" style="opacity: 0.9;">Total Enrolled Students</p>
-                            <h3 class="fw-bold text-white mb-0">
-                                <span id="overviewTotal">{{ all_record }}</span>
-                            </h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Center Cards Section -->
-    <div class="row g-3" id="overviewCards" style="max-height: 70vh; overflow-y: auto; justify-content: center;">
-        {% for center, stats in centers %}
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-2 overflow-hidden h-100" style="min-height: 350px;">
-                    <!-- Card Header -->
-                    <div style="background-color:#0e2238; padding: 1rem;">
-                        <h5 class="text-white fw-bold mb-2" style="font-size: 1.1rem;">{{ center }}</h5>
-                        <p class="text-white mb-0 small" style="opacity: 0.9; font-size: 0.9rem;">
-                            <strong>Total:</strong> <span style="font-size: 1.3rem;">{{ stats.Total }}</span>
-                        </p>
-                    </div>
-
-                    <!-- Card Body -->
-                    <div class="p-2">
-                        <!-- Caste Stats -->
-                        <div class="row g-2 mb-3">
-                            <div class="col-4">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">GEN</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.GENERAL }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">SC</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.SC }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">ST</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.ST }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">OBC</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.OBC }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">PWD</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.PWD }}</h5>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Course Types -->
-                        <div class="row g-2">
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">B</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.B }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">C</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.C }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">D</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.D }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="text-center p-2 bg-light rounded-1">
-                                    <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">E</p>
-                                    <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">{{ stats.E }}</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-</div>
-
 <style>
-    .card {
-        transition: box-shadow 0.2s ease;
+    .ov-header { margin-bottom: 32px; }
+    .ov-header h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #1d1d1f; margin-bottom: 4px; }
+    .ov-header p { font-size: 14px; color: #6e6e73; margin: 0; }
+    .ov-controls { display: flex; gap: 12px; align-items: center; margin-bottom: 28px; flex-wrap: wrap; }
+    .ov-controls select {
+        padding: 8px 14px; border: 1.5px solid #d2d2d7; border-radius: 10px;
+        font-size: 13px; font-weight: 500; color: #1d1d1f; background: #fff;
+        outline: none; cursor: pointer; transition: border-color 0.2s;
+        -webkit-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236e6e73' stroke-width='1.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px;
     }
-    .card:hover {
-        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1) !important;
+    .ov-controls select:hover { border-color: #1d1d1f; }
+    .ov-controls select:focus { border-color: #0066cc; }
+
+    .ov-cards {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;
+        margin-bottom: 28px;
     }
-    .x-small {
-        font-size: 0.7rem;
+    .ov-card {
+        background: #fff; padding: 20px 16px; text-align: center;
+        border-radius: 14px; border: 1px solid #e8e8ed;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        opacity: 0; animation: fadeUp 0.5s ease forwards; transform: translateY(12px);
+        transition: box-shadow 0.25s, transform 0.25s;
+    }
+    .ov-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .ov-card:nth-child(1) { animation-delay: 0.03s; }
+    .ov-card:nth-child(2) { animation-delay: 0.06s; }
+    .ov-card:nth-child(3) { animation-delay: 0.09s; }
+    .ov-card:nth-child(4) { animation-delay: 0.12s; }
+    .ov-card:nth-child(5) { animation-delay: 0.15s; }
+    .ov-card:nth-child(6) { animation-delay: 0.18s; }
+    .ov-card:nth-child(7) { animation-delay: 0.21s; }
+    .ov-card .num { font-size: 28px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.02em; line-height: 1.1; }
+    .ov-card .num.mon { color: #0066cc; }
+    .ov-card .label { font-size: 11px; font-weight: 500; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; }
+
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    .ov-center-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;
+    }
+    .ov-center-card {
+        background: #fff; padding: 24px;
+        border-radius: 16px; border: 1px solid #e8e8ed;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        opacity: 0; animation: fadeUp 0.5s ease forwards; transform: translateY(12px);
+        transition: box-shadow 0.25s, transform 0.25s;
+    }
+    .ov-center-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-3px); }
+    .ov-center-card:nth-child(1) { animation-delay: 0.1s; }
+    .ov-center-card:nth-child(2) { animation-delay: 0.18s; }
+    .ov-center-card:nth-child(3) { animation-delay: 0.26s; }
+    .ov-center-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f2;
+    }
+    .ov-center-header h3 { font-size: 17px; font-weight: 600; color: #1d1d1f; margin: 0; }
+    .ov-center-header .total { font-size: 22px; font-weight: 700; color: #0066cc; }
+
+    .ov-mini-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px;
+        margin-bottom: 12px;
+    }
+    .ov-mini-item {
+        background: #f9f9fb; padding: 10px 6px; text-align: center;
+        border-radius: 10px; transition: background 0.2s;
+    }
+    .ov-mini-item:hover { background: #f0f0f5; }
+    .ov-mini-item .num { font-size: 17px; font-weight: 600; color: #1d1d1f; }
+    .ov-mini-item .num.green { color: #1d9e6b; }
+    .ov-mini-item .num.blue { color: #0066cc; }
+    .ov-mini-item .num.orange { color: #d9760e; }
+    .ov-mini-item .label { font-size: 9px; font-weight: 500; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+    .ov-section-title {
+        font-size: 10px; font-weight: 600; color: #8e8e93; letter-spacing: 0.06em;
+        text-transform: uppercase; margin-bottom: 8px; margin-top: 14px;
+    }
+    .ov-section-title:first-child { margin-top: 0; }
+
+    @media (max-width: 768px) {
+        .ov-center-grid { grid-template-columns: 1fr; }
+        .ov-cards { grid-template-columns: repeat(3, 1fr); }
+        .ov-card { padding: 14px 10px; }
+        .ov-card .num { font-size: 22px; }
     }
 </style>
-    <script>
-        const sessionSelect = document.getElementById('sessionSelect');
-        const overviewTotal = document.getElementById('overviewTotal');
-        const overviewCards = document.getElementById('overviewCards');
 
-        function renderCenterCard(center) {
-            return `
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card border-0 shadow-sm rounded-2 overflow-hidden h-100" style="min-height: 350px;">
-                        <div style="background-color: #0e2238; padding: 1rem;">
-                            <h5 class="text-white fw-bold mb-2" style="font-size: 1.1rem;">${center.name}</h5>
-                            <p class="text-white mb-0 small" style="opacity: 0.9; font-size: 0.9rem;">
-                                <strong>Total:</strong> <span style="font-size: 1.3rem;">${center.stats.Total}</span>
-                            </p>
-                        </div>
-                        <div class="p-2">
-                            <div class="row g-2 mb-3">
-                                <div class="col-4">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">GEN</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.GENERAL}</h5>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">SC</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.SC}</h5>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">ST</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.ST}</h5>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">OBC</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.OBC}</h5>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">PWD</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.PWD}</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-2">
-                                <div class="col-3">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">B</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.B}</h5>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">C</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.C}</h5>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">D</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.D}</h5>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="text-center p-2 bg-light rounded-1">
-                                        <p class="text-muted x-small mb-1" style="font-size: 0.8rem;">E</p>
-                                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">${center.stats.E}</h5>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+<div class="ov-header">
+    <h2>Overview</h2>
+    <p>Program statistics across all centers</p>
+</div>
 
-        function loadOverviewData(sessionValue) {
-            const url = new URL('{% url "overview_data" %}', window.location.origin);
-            if (sessionValue) {
-                url.searchParams.set('session', sessionValue);
+<div class="ov-controls">
+    <select id="sessionSelect">
+        <option value="">All Sessions</option>
+    </select>
+</div>
+
+<div id="ov-metrics" class="ov-cards">
+    <div class="ov-card"><div class="num" id="m-total">—</div><div class="label">Enrolled</div></div>
+    <div class="ov-card"><div class="num mon" id="m-fee">—</div><div class="label">Total Fee</div></div>
+    <div class="ov-card"><div class="num mon" id="m-claimable">—</div><div class="label">Claimable</div></div>
+    <div class="ov-card"><div class="num" id="m-trained">—</div><div class="label">Trained</div></div>
+    <div class="ov-card"><div class="num" id="m-certified">—</div><div class="label">Certified</div></div>
+    <div class="ov-card"><div class="num" id="m-placed">—</div><div class="label">Placed</div></div>
+    <div class="ov-card"><div class="num" id="m-claimed">—</div><div class="label">Claimed</div></div>
+</div>
+
+<div id="ov-centers" class="ov-center-grid"></div>
+
+<script>
+const USER_CENTER = "{{ user_center|default:'' }}";
+
+function fmt(n) {
+    if (n === undefined || n === null) return "—";
+    if (typeof n === 'number' && !Number.isInteger(n)) return "₹" + n.toLocaleString("en-IN", {maximumFractionDigits: 0});
+    return n.toLocaleString("en-IN");
+}
+
+function renderMetric(id, val, isMoney) {
+    document.getElementById(id).textContent = isMoney ? "₹" + Number(val).toLocaleString("en-IN", {maximumFractionDigits:0}) : Number(val).toLocaleString("en-IN");
+}
+
+function renderCenterCard(c) {
+    const s = c.stats;
+    return `<div class="ov-center-card">
+        <div class="ov-center-header">
+            <h3>${c.name}</h3>
+            <div class="total">${fmt(s.Total)}</div>
+        </div>
+        <div class="ov-section-title">Progress</div>
+        <div class="ov-mini-grid">
+            <div class="ov-mini-item"><div class="num green">${fmt(s.Trained)}</div><div class="label">Trained</div></div>
+            <div class="ov-mini-item"><div class="num green">${fmt(s.Certified)}</div><div class="label">Certified</div></div>
+            <div class="ov-mini-item"><div class="num blue">${fmt(s.Placed)}</div><div class="label">Placed</div></div>
+            <div class="ov-mini-item"><div class="num orange">${fmt(s.Claimed)}</div><div class="label">Claimed</div></div>
+        </div>
+        <div class="ov-section-title">Caste</div>
+        <div class="ov-mini-grid">
+            <div class="ov-mini-item"><div class="num">${fmt(s.GENERAL)}</div><div class="label">General</div></div>
+            <div class="ov-mini-item"><div class="num">${fmt(s.OBC)}</div><div class="label">OBC</div></div>
+            <div class="ov-mini-item"><div class="num">${fmt(s.SC)}</div><div class="label">SC</div></div>
+            <div class="ov-mini-item"><div class="num">${fmt(s.ST)}</div><div class="label">ST</div></div>
+            <div class="ov-mini-item"><div class="num">${fmt(s.PWD)}</div><div class="label">PWD</div></div>
+        </div>
+        <div class="ov-section-title">Finance</div>
+        <div class="ov-mini-grid">
+            <div class="ov-mini-item"><div class="num blue">${fmt(s["Total Fee"])}</div><div class="label">Fee</div></div>
+            <div class="ov-mini-item"><div class="num blue">${fmt(s["Total Claimable"])}</div><div class="label">Claimable</div></div>
+        </div>
+        <div class="ov-section-title">Course Categories</div>
+        <div class="ov-mini-grid">
+            <div class="ov-mini-item"><div class="num">${fmt(s.B)}</div><div class="label">B</div></div>
+            <div class="ov-mini-item"><div class="num">${fmt(s.C)}</div><div class="label">C</div></div>
+            <div class="ov-mini-item"><div class="num">${fmt(s.D)}</div><div class="label">D</div></div>
+            <div class="ov-mini-item"><div class="num">${fmt(s.E)}</div><div class="label">E</div></div>
+        </div>
+    </div>`;
+}
+
+function loadOverview(session) {
+    const url = new URL("{% url 'overview_data' %}", window.location.origin);
+    if (session) url.searchParams.set("session", session);
+
+    fetch(url)
+        .then(r => r.json())
+        .then(d => {
+            const g = d.all_record;
+            renderMetric("m-total", g.Total, false);
+            renderMetric("m-fee", g["Total Fee"], true);
+            renderMetric("m-claimable", g["Total Claimable"], true);
+            renderMetric("m-trained", g.Trained, false);
+            renderMetric("m-certified", g.Certified, false);
+            renderMetric("m-placed", g.Placed, false);
+            renderMetric("m-claimed", g.Claimed, false);
+
+            document.getElementById("ov-centers").innerHTML = d.centers.map(renderCenterCard).join("");
+
+            const sel = document.getElementById("sessionSelect");
+            const currentVal = sel.value;
+            if (d.sessions && d.sessions.length) {
+                const existing = Array.from(sel.options).map(o => o.value);
+                d.sessions.forEach(s => { if (!existing.includes(s)) { const o = document.createElement("option"); o.value = s; o.textContent = s; sel.appendChild(o); }});
             }
+            if (currentVal) sel.value = currentVal;
+            else sel.value = session || "";
+        })
+        .catch(err => console.error("Overview error", err));
+}
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    overviewTotal.textContent = data.all_record;
-                    overviewCards.innerHTML = data.centers.map(renderCenterCard).join('');
+document.getElementById("sessionSelect").addEventListener("change", function() {
+    loadOverview(this.value);
+});
 
-                    const currentOption = sessionSelect.querySelector(`option[value="${sessionValue}"]`);
-                    if (currentOption) {
-                        currentOption.selected = true;
-                    }
-                })
-                .catch(err => console.error('Overview AJAX error', err));
-        }
-
-        sessionSelect.addEventListener('change', () => {
-            loadOverviewData(sessionSelect.value);
-        });
-    </script>
-
+window.onload = function() {
+    const sel = document.getElementById("sessionSelect");
+    const urlParam = new URLSearchParams(window.location.search).get("session");
+    if (urlParam) sel.value = urlParam;
+    loadOverview(sel.value);
+};
+</script>
 {% endblock content %}

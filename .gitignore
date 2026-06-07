@@ -1,7 +1,13 @@
 .env
 .venv/
 db.sqlite3
+*.sqlite3
+*.sqlite
+*.db
 __pycache__/
 *.pyc
+*.pyo
 staticfiles/
+.DS_Store
+Thumbs.db
 sample_*.xlsx

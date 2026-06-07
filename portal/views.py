@@ -302,24 +302,29 @@ def xlrow_to_dict(s):
 
 
 def center_summary(qs):
+    from django.db.models import Sum
+    total = qs.count()
+    fee_agg = qs.aggregate(t=Sum("fee"), c=Sum("claimable_amount"))
+    total_fee = float(fee_agg["t"] or 0)
+    total_claimable = float(fee_agg["c"] or 0)
     summary = {
-        "Total": qs.count(),
-        "SC": 0,
-        "ST": 0,
-        "OBC": 0,
-        "PWD": 0,
-        "GENERAL": 0,
-        "B": 0,
-        "C": 0,
-        "D": 0,
-        "E": 0,
+        "Total": total,
+        "Trained": qs.filter(trained=True).count(),
+        "Certified": qs.filter(certified=True).count(),
+        "Placed": qs.filter(placed=True).count(),
+        "Claimed": qs.filter(claimed=True).count(),
+        "Total Fee": total_fee,
+        "Total Claimable": total_claimable,
+        "SC": 0, "ST": 0, "OBC": 0, "PWD": 0, "GENERAL": 0,
+        "B": 0, "C": 0, "D": 0, "E": 0,
     }
-    for s in qs:
-        if s.caste_category in summary:
-            summary[s.caste_category] += 1
-        cat = (s.course_category or "").strip().upper()[:1]
+    for s in qs.only("caste_category", "course_category"):
+        cat = s.caste_category
         if cat in summary:
             summary[cat] += 1
+        cc = (s.course_category or "").strip().upper()[:1]
+        if cc in summary:
+            summary[cc] += 1
     return summary
 
 
@@ -940,21 +945,39 @@ def inputView(request):
 # ─── Overview ────────────────────────────────────────────────────────────────
 
 
-def _overview_context(selected_session, user=None):
+@login_required(login_url="/login")
+def overview(request):
+    profile = getattr(request.user, "profile", None)
+    user_center = profile.center if profile and profile.center else None
+    return render(request, "overview.html", {"user_center": user_center})
+
+
+def _overview_context(selected_session, user_center=None, user=None):
     base_qs = get_student_qs(user) if user else studentdata.objects.all()
     students = base_qs
     if selected_session:
         students = students.filter(session=selected_session)
 
-    return {
-        "all_record": students.count(),
-        "centers": [
-            {
+    global_summary = center_summary(students)
+
+    centers_data = []
+    if user_center:
+        filtered = students.filter(center_name=user_center)
+        centers_data.append({
+            "name": user_center.capitalize(),
+            "stats": center_summary(filtered),
+        })
+    else:
+        for n in CENTERS:
+            filtered = students.filter(center_name=n)
+            centers_data.append({
                 "name": n.capitalize(),
-                "stats": center_summary(students.filter(center_name=n)),
-            }
-            for n in CENTERS
-        ],
+                "stats": center_summary(filtered),
+            })
+
+    return {
+        "all_record": global_summary,
+        "centers": centers_data,
         "sessions": list(
             base_qs.values_list("session", flat=True)
             .distinct()
@@ -965,15 +988,16 @@ def _overview_context(selected_session, user=None):
 
 
 @login_required(login_url="/login")
-def overview(request):
-    ctx = _overview_context(request.GET.get("session", ""), user=request.user)
-    ctx["centers"] = [(c["name"], c["stats"]) for c in ctx["centers"]]
-    return render(request, "overview.html", ctx)
-
-
-@login_required(login_url="/login")
 def overview_data(request):
-    return JsonResponse(_overview_context(request.GET.get("session", ""), user=request.user))
+    profile = getattr(request.user, "profile", None)
+    user_center = profile.center if profile and profile.center else None
+    return JsonResponse(
+        _overview_context(
+            request.GET.get("session", ""),
+            user_center=user_center,
+            user=request.user,
+        )
+    )
 
 
 def courses(request):
