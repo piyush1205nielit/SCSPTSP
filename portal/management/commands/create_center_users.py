@@ -39,7 +39,7 @@ class Command(BaseCommand):
         admin.set_password(ADMIN_USER["password"])
         admin.save()
         profile, _ = UserProfile.objects.get_or_create(user=admin)
-        profile.center_name = None
+        profile.center = None
         profile.save()
         self.stdout.write(
             self.style.SUCCESS(
@@ -58,7 +58,7 @@ class Command(BaseCommand):
             user.set_password(u["password"])
             user.save()
             profile, _ = UserProfile.objects.get_or_create(user=user)
-            profile.center_name = u["center"]
+            profile.center = u["center"]
             profile.save()
             self.stdout.write(
                 self.style.SUCCESS(
