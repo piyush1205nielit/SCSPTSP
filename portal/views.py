@@ -409,30 +409,36 @@ def upload(request):
                         errors += 1
                         continue
 
-                    # ── Match existing record (like placement logic) ──
-                    # Primary: aadhaar + course_name + batch_code
-                    # Fallback: name + course_name + batch_code
-                    aadhaar = row_dict.get("aadhaar")
+                    # ── Match existing record ──
+                    # Primary: aadhaar + batch_code
+                    # Fallback: name + batch_code
+                    aadhaar_raw = row_dict.get("aadhaar")
                     batch = row_dict.get("batch_code")
+                    name = row_dict.get("name")
                     student = None
-                    if aadhaar and course:
+
+                    # Clean aadhaar: handle Excel floats (123.0 -> 123) and scientific notation
+                    aadhaar = ""
+                    if aadhaar_raw is not None:
+                        try:
+                            aadhaar = str(int(float(str(aadhaar_raw).strip()))).strip()
+                        except (ValueError, OverflowError):
+                            aadhaar = str(aadhaar_raw).strip()
+
+                    if aadhaar and batch:
                         qs = studentdata.objects.filter(
-                            aadhaar=str(aadhaar).strip(),
-                            course_name__iexact=str(course).strip(),
+                            aadhaar=aadhaar,
+                            batch_code__iexact=str(batch).strip(),
                         )
-                        if batch:
-                            qs = qs.filter(batch_code__iexact=str(batch).strip())
                         if user_center:
                             qs = qs.filter(center_name=user_center)
                         student = qs.first()
 
-                    if not student and name and course:
+                    if not student and name and batch:
                         qs = studentdata.objects.filter(
                             name__iexact=str(name).strip(),
-                            course_name__iexact=str(course).strip(),
+                            batch_code__iexact=str(batch).strip(),
                         )
-                        if batch:
-                            qs = qs.filter(batch_code__iexact=str(batch).strip())
                         if user_center:
                             qs = qs.filter(center_name=user_center)
                         student = qs.first()
@@ -511,7 +517,7 @@ def upload(request):
                             "father_name": safe_str(row_dict.get("father_name")),
                             "mother_name": safe_str(row_dict.get("mother_name")),
                             "dob": dob_val,
-                            "aadhaar": safe_str(row_dict.get("aadhaar")),
+                            "aadhaar": aadhaar,
                             "course_name": safe_str(row_dict.get("course_name")),
                         }
 
