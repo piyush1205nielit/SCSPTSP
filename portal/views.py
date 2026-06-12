@@ -411,10 +411,10 @@ def upload(request):
 
                     # ── Match existing record ──
                     # Primary: aadhaar + batch_code
-                    # Fallback: name + batch_code
+                    # Fallback: batch_code + roll_number
                     aadhaar_raw = row_dict.get("aadhaar")
                     batch = row_dict.get("batch_code")
-                    name = row_dict.get("name")
+                    roll_number = row_dict.get("roll_number")
                     student = None
 
                     # Clean aadhaar: handle Excel floats (123.0 -> 123) and scientific notation
@@ -434,10 +434,10 @@ def upload(request):
                             qs = qs.filter(center_name=user_center)
                         student = qs.first()
 
-                    if not student and name and batch:
+                    if not student and batch and roll_number:
                         qs = studentdata.objects.filter(
-                            name__iexact=str(name).strip(),
                             batch_code__iexact=str(batch).strip(),
+                            roll_number__iexact=str(roll_number).strip(),
                         )
                         if user_center:
                             qs = qs.filter(center_name=user_center)
