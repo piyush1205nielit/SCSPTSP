@@ -28,4 +28,7 @@ urlpatterns = [
     path("placement/", views.placement_view, name="placement"),
     path("filter-placement/", views.filter_placement, name="filter_placement"),
     path("upload-placement/", views.upload_placement_records, name="upload_placement"),
+    path("sample-placement/", views.sample_placement_upload, name="sample_placement"),
+    path("search-students-json/", views.search_students_json, name="search_students_json"),
+    path("create-placement-ajax/", views.create_placement_ajax, name="create_placement_ajax"),
 ]

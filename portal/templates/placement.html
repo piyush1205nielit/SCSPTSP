@@ -1,158 +1,358 @@
 {% extends "base.html" %} {% block content %}
 <style>
-    th {
-        cursor: pointer;
-        user-select: none;
-    }
-    th:hover {
-        background-color: rgb(0, 0, 0);
-    }
-    .pagination-btn {
-        padding: 8px 16px;
-        background: var(--blue);
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        font-family: var(--sans);
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
-        box-shadow: 0 2px 6px rgba(26, 111, 196, 0.22);
-        margin: 0 5px;
-    }
-    .pagination-btn:hover:not(:disabled) {
-        background: var(--blue-light);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(26, 111, 196, 0.3);
-    }
-    .pagination-btn:active:not(:disabled) {
-        transform: translateY(0);
-    }
-    .pagination-btn:disabled {
-        background: var(--text-muted);
-        cursor: not-allowed;
-        box-shadow: none;
-        transform: none;
-    }
-    .placement-header {
-        margin-bottom: 1.5rem;
-    }
-    .placement-header h2 {
-        margin-bottom: 0.25rem;
-    }
-    .placement-header .subtitle {
-        color: var(--text-muted);
-        font-size: 13px;
-    }
-    .placement-tabs {
-        display: flex;
-        gap: 0;
-        margin-bottom: 1.5rem;
-        border-bottom: 2px solid var(--border);
-    }
-    .placement-tab {
-        padding: 10px 24px;
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -2px;
-        font-family: var(--sans);
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-muted);
-        cursor: pointer;
-        transition: color 0.15s, border-color 0.15s;
-    }
-    .placement-tab:hover {
-        color: var(--blue);
-    }
-    .placement-tab.active {
-        color: var(--blue);
-        border-bottom-color: var(--blue);
-    }
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
-    }
-    .upload-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 24px;
-        box-shadow: var(--shadow-sm);
-    }
-    .upload-card .form-group {
-        margin-bottom: 16px;
-    }
-    .upload-card .form-group label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 6px;
-        font-size: 14px;
-    }
-    .upload-card .form-actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 20px;
-    }
-    .btn {
-        padding: 10px 24px;
-        border: none;
-        border-radius: 6px;
-        font-family: var(--sans);
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.15s, transform 0.12s;
-    }
-    .btn-primary {
-        background: var(--blue);
-        color: #fff;
-    }
-    .btn-primary:hover {
-        background: var(--blue-light);
-    }
-    .btn-secondary {
-        background: var(--border);
-        color: var(--text);
-    }
-    .btn-secondary:hover {
-        background: #c0c8d6;
-    }
-    .alert-success {
-        background: #d4edda;
-        color: #155724;
-        padding: 12px 16px;
-        border-radius: 6px;
-        margin-bottom: 16px;
-        font-size: 14px;
-    }
-    .alert-error {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 12px 16px;
-        border-radius: 6px;
-        margin-bottom: 16px;
-        font-size: 14px;
-    }
-    .placement-upload-note {
-        margin-top: 16px;
-        padding: 12px 16px;
-        background: #fff3cd;
-        border-radius: 6px;
-        font-size: 13px;
-        color: #856404;
-    }
-    .placement-upload-note code {
-        background: #ffeeba;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-family: var(--mono);
-        font-size: 12px;
-    }
+.placement-header {
+    margin-bottom: 1.5rem;
+}
+.placement-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.25rem;
+}
+.placement-header .subtitle {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+.placement-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+}
+.placement-tab {
+    padding: 10px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.placement-tab:hover { color: var(--blue); }
+.placement-tab.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+}
+.filter-bar input, .filter-bar select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+}
+.filter-bar input:focus, .filter-bar select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(26,111,196,0.12);
+}
+.filter-bar .btn-action {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.12s;
+}
+.filter-bar .btn-find {
+    background: var(--blue);
+    color: #fff;
+}
+.filter-bar .btn-find:hover {
+    background: var(--blue-light);
+    transform: translateY(-1px);
+}
+.filter-bar .btn-clear {
+    background: var(--border);
+    color: var(--text);
+}
+.filter-bar .btn-clear:hover {
+    background: #c0c8d6;
+}
+.filter-bar .btn-add {
+    background: var(--success);
+    color: #fff;
+    margin-left: auto;
+}
+.filter-bar .btn-add:hover {
+    background: #259d52;
+    transform: translateY(-1px);
+}
+
+.table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+.table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table-wrap thead th {
+    background: var(--navy);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+.table-wrap tbody td {
+    padding: 9px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+}
+.table-wrap tbody tr:hover {
+    background: #f8faff;
+}
+.table-wrap tbody tr:last-child td {
+    border-bottom: none;
+}
+.badge-yes {
+    display: inline-block;
+    background: #e6f7e6;
+    color: var(--success);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+.badge-no {
+    display: inline-block;
+    background: #fde8e8;
+    color: var(--danger);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+
+.pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+}
+.pagination-bar button {
+    padding: 7px 18px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.pagination-bar button:hover:not(:disabled) { background: var(--blue-light); }
+.pagination-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination-bar .page-info { font-size: 13px; color: var(--text-muted); }
+.pagination-bar select {
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 13px;
+}
+
+.upload-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+}
+.upload-card .form-group { margin-bottom: 16px; }
+.upload-card .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.upload-card .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+.btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.12s;
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-light); transform: translateY(-1px); }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-secondary:hover { background: #c0c8d6; }
+.alert-success {
+    background: #d4edda; color: #155724; padding: 12px 16px;
+    border-radius: 6px; margin-bottom: 16px; font-size: 14px;
+}
+.alert-error {
+    background: #f8d7da; color: #721c24; padding: 12px 16px;
+    border-radius: 6px; margin-bottom: 16px; font-size: 14px;
+}
+.placement-upload-note {
+    margin-top: 16px; padding: 12px 16px;
+    background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;
+}
+.placement-upload-note code {
+    background: #ffeeba; padding: 2px 6px; border-radius: 3px;
+    font-family: var(--mono); font-size: 12px;
+}
+
+.pm-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(13,33,55,0.6); z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(3px);
+}
+.pm-card {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 680px;
+    max-height: 94vh; display: flex; flex-direction: column;
+    box-shadow: 0 25px 60px rgba(13,33,55,0.3);
+    animation: pmSlide 0.25s ease-out;
+}
+@keyframes pmSlide {
+    from { opacity: 0; transform: translateY(30px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pm-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 28px 16px 28px; position: sticky; top: 0;
+    background: #fff; z-index: 1; border-radius: 16px 16px 0 0;
+    border-bottom: 1px solid #eaedf2;
+}
+.pm-head h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--navy); letter-spacing:-0.01em; }
+.pm-close {
+    background: #f0f2f5; border: none; width: 32px; height: 32px;
+    border-radius: 50%; font-size: 20px; cursor: pointer;
+    color: var(--text-muted); display: flex; align-items: center;
+    justify-content: center; transition: all 0.15s;
+}
+.pm-close:hover { background: #e4e7ed; color: var(--text); }
+.pm-body {
+    padding: 4px 28px 20px; overflow-y: auto; flex: 1 1 auto;
+}
+.pm-foot {
+    padding: 16px 28px; border-top: 1px solid #eaedf2;
+    display: flex; gap: 10px; justify-content: flex-end;
+    position: sticky; bottom: 0; background: #fff;
+    border-radius: 0 0 16px 16px;
+}
+
+.pm-section {
+    padding: 18px; border-radius: 10px; margin-bottom: 16px;
+    background: #fafbfc; border-left: 3px solid;
+}
+.pm-section.blue-bar { border-left-color: var(--blue); }
+.pm-section.green-bar { border-left-color: var(--success); }
+.pm-section-title {
+    font-size: 14px; font-weight: 700; color: var(--navy);
+    margin-bottom: 2px;
+}
+.pm-section-desc {
+    font-size: 12px; color: var(--text-muted); margin-bottom: 14px;
+}
+
+.pm-info-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+}
+.pm-info-item {
+    background: #fff; border: 1px solid #e8ecf2;
+    border-radius: 6px; padding: 8px 12px;
+    display: flex; flex-direction: column;
+}
+.pm-info-label {
+    font-size: 10px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;
+}
+.pm-info-value {
+    font-size: 13px; font-weight: 600; color: var(--text);
+}
+
+.pm-fld-label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: #444; margin-bottom: 4px;
+}
+.pm-row {
+    display: flex; gap: 14px; margin-bottom: 12px;
+}
+.pm-row:last-child { margin-bottom: 0; }
+.pm-cell { flex: 1; }
+.pm-cell input, .pm-cell select {
+    width: 100%; padding: 8px 12px; border: 1px solid #dce1e9;
+    border-radius: 7px; font-family: var(--sans); font-size: 13px;
+    color: var(--text); background: #fff; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s; box-sizing: border-box;
+}
+.pm-cell input:focus, .pm-cell select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(26,111,196,0.1);
+}
+.pm-cell input::placeholder { color: #b0b8c8; }
+
+select.pm-student-select {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--blue);
+    border-radius: 8px; font-family: var(--sans); font-size: 13px;
+    font-weight: 500; color: var(--navy); background: #fff;
+    outline: none; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+}
+select.pm-student-select:focus {
+    border-color: var(--blue-light);
+    box-shadow: 0 0 0 3px rgba(26,111,196,0.12);
+}
+
+.pm-btn-cancel {
+    padding: 9px 22px; border: 1px solid #dce1e9; border-radius: 8px;
+    background: #fff; font-family: var(--sans); font-size: 13px;
+    font-weight: 600; color: var(--text-muted); cursor: pointer;
+    transition: all 0.15s;
+}
+.pm-btn-cancel:hover { background: #f5f6f8; border-color: #c8ced8; color: var(--text); }
+.pm-btn-save {
+    padding: 9px 22px; border: none; border-radius: 8px;
+    background: var(--blue); font-family: var(--sans); font-size: 13px;
+    font-weight: 600; color: #fff; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s; box-shadow: 0 2px 8px rgba(26,111,196,0.2);
+}
+.pm-btn-save:hover { background: var(--blue-light); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,111,196,0.25); }
+.pm-btn-icon { font-size: 16px; font-weight: 700; line-height: 1; }
 </style>
 
 <div class="placement-header">
@@ -174,61 +374,57 @@
 {% endif %}
 
 <div id="tab-view" class="tab-content active">
-    <div class="filters">
-        <input type="text" id="nameFilter" placeholder="Name..." class="minput" style="width:160px" />
-        <input type="text" id="courseFilter" placeholder="Course..." class="minput" style="width:140px" />
-        <input type="text" id="batchFilter" placeholder="Batch..." class="minput" style="width:100px" />
-        <input type="text" id="companyFilter" placeholder="Company..." class="minput" style="width:160px" />
-        <select id="opportunityFilter">
+    <div class="filter-bar">
+        <input type="text" id="nameFilter" placeholder="Name..." style="width:150px" />
+        <input type="text" id="courseFilter" placeholder="Course..." style="width:130px" />
+        <input type="text" id="batchFilter" placeholder="Batch..." style="width:100px" />
+        <input type="text" id="companyFilter" placeholder="Company..." style="width:140px" />
+        <select id="opportunityFilter" style="width:120px">
             <option value="">All Types</option>
             <option value="Internship">Internship</option>
             <option value="Placement">Placement</option>
         </select>
-        <select id="centerFilter">
+        <select id="centerFilter" style="width:120px">
             <option value="">All Centers</option>
             <option value="inderlok">Inderlok</option>
             <option value="janakpuri">Janakpuri</option>
             <option value="karkardooma">Karkardooma</option>
         </select>
-        <select id="placedFilter">
-            <option value="">All (Placed)</option>
+        <select id="placedFilter" style="width:110px">
+            <option value="">Placed?</option>
             <option value="true">Placed</option>
             <option value="false">Not Placed</option>
         </select>
-        <button onclick="filterPlacement()" class="clear-btn" style="background-color: blue">Find</button>
-        <button onclick="clearFilters()" class="clear-btn">Clear</button>
+        <button onclick="filterPlacement()" class="btn-action btn-find">Find</button>
+        <button onclick="clearFilters()" class="btn-action btn-clear">Clear</button>
+        <button onclick="openAddModal()" class="btn-action btn-add">+ Add Placement</button>
     </div>
 
-    <div style="overflow-x: auto">
+    <div class="table-wrap">
         <table>
             <thead>
                 <tr>
-                    <th>S. No.</th>
+                    <th style="width:50px">S.No</th>
                     <th>Student Name</th>
                     <th>Course</th>
                     <th>Batch</th>
                     <th>Center</th>
-                    <th>Opportunity Type</th>
-                    <th>Selection Status</th>
+                    <th>Type</th>
+                    <th>Status</th>
                     <th>Company</th>
                     <th>Role</th>
-                    <th>Placed</th>
+                    <th style="width:70px">Placed</th>
                 </tr>
             </thead>
             <tbody id="results">
-                <tr>
-                    <td colspan="10" style="text-align: center">Loading...</td>
-                </tr>
+                <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">Loading...</td></tr>
             </tbody>
         </table>
-    </div>
-
-    <div id="pagination" style="display: none; text-align: center; margin-top: 20px">
-        <button id="prevBtn" onclick="changePage(currentPage - 1)" disabled class="pagination-btn">Previous</button>
-        <span id="pageInfo" style="margin: 0 20px">Page 1 of 1</span>
-        <button id="nextBtn" onclick="changePage(currentPage + 1)" disabled class="pagination-btn">Next</button>
-        <div style="margin-top: 10px">
-            <label>Records per page:</label>
+        <div id="pagination" class="pagination-bar" style="display:none;">
+            <button id="prevBtn" onclick="changePage(currentPage - 1)" disabled>Previous</button>
+            <span class="page-info" id="pageInfo">Page 1 of 1</span>
+            <button id="nextBtn" onclick="changePage(currentPage + 1)" disabled>Next</button>
+            <span style="margin-left:16px;font-size:12px;color:var(--text-muted);">Records per page:</span>
             <select id="limitSelect" onchange="changeLimit(this.value)">
                 <option value="10">10</option>
                 <option value="25">25</option>
@@ -252,18 +448,150 @@
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Upload &amp; Update</button>
+                <a href="{% url 'sample_placement' %}" class="btn btn-secondary">Download Sample Template</a>
             </div>
         </form>
     </div>
     <div class="placement-upload-note">
         <strong>Excel Format:</strong> The file should have these columns (order doesn't matter):
-        <code>Student Name</code>, <code>Student ID</code>, <code>Course/Branch</code>, <code>Semester/Batch</code>,
+        <code>Student Name</code>, <code>Roll Number</code>, <code>Course/Branch</code>, <code>Semester/Batch</code>,
         <code>Centre/Campus</code>, <code>Opportunity Type (Internship/Placement)</code>, <code>Selection Status</code>,
         <code>Offer Received (Y/N)</code>, <code>Company/Organization</code>, <code>Job Title/Role</code>,
         <code>Source of Opportunity</code>, <code>Date Applied</code>, <code>Joining Date</code>, <code>Current Status</code>.
         Placement status is determined from <code>Offer Received (Y/N)</code> or <code>Selection Status</code>.
-        Students are matched using <code>Student ID</code> (preferred) or <code>Student Name</code> + <code>Semester/Batch</code>.
-        All data columns are stored in the Placement Records table.
+        Students are matched using <code>Roll Number</code> (preferred) or <code>Student Name</code> + <code>Semester/Batch</code>.
+    </div>
+</div>
+
+<div id="addModal" class="pm-overlay" style="display:none;">
+    <div class="pm-card">
+        <div class="pm-head">
+            <h3>+ Add Placement Record</h3>
+            <button onclick="closeAddModal()" class="pm-close">&times;</button>
+        </div>
+        <div class="pm-body">
+            <form id="add-placement-form">
+                {% csrf_token %}
+
+                <div class="pm-section blue-bar">
+                    <div class="pm-section-title">Student Information</div>
+                    <div class="pm-section-desc">Select a student to auto-fill their details</div>
+                    <div style="margin-bottom:14px;">
+                        <label class="pm-fld-label">Select Student<sup style="color:var(--danger)">*</sup></label>
+                        <select id="modal-student-select" name="student" class="pm-student-select">
+                            <option value="">-- Choose a student --</option>
+                        </select>
+                    </div>
+                    <div class="pm-info-grid">
+                        <div class="pm-info-item">
+                            <span class="pm-info-label">Student Name</span>
+                            <span class="pm-info-value" id="modal-s-name-display">—</span>
+                            <input type="hidden" id="modal-s-name" name="student_name">
+                        </div>
+                        <div class="pm-info-item">
+                            <span class="pm-info-label">Roll Number</span>
+                            <span class="pm-info-value" id="modal-s-roll-display">—</span>
+                            <input type="hidden" id="modal-s-roll" name="aadhaar">
+                        </div>
+                        <div class="pm-info-item">
+                            <span class="pm-info-label">Course</span>
+                            <span class="pm-info-value" id="modal-s-course-display">—</span>
+                            <input type="hidden" id="modal-s-course" name="course_name">
+                        </div>
+                        <div class="pm-info-item">
+                            <span class="pm-info-label">Batch</span>
+                            <span class="pm-info-value" id="modal-s-batch-display">—</span>
+                            <input type="hidden" id="modal-s-batch" name="batch_code">
+                        </div>
+                        <div class="pm-info-item">
+                            <span class="pm-info-label">Center</span>
+                            <span class="pm-info-value" id="modal-s-center-display">—</span>
+                            <input type="hidden" id="modal-s-center" name="center_name">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pm-section green-bar">
+                    <div class="pm-section-title">Placement &amp; Company Details</div>
+                    <div class="pm-section-desc">Fill in the placement-specific information</div>
+                    <div class="pm-row">
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Opportunity Type</label>
+                            <select name="opportunity_type">
+                                <option value="">Select</option>
+                                <option value="Internship">Internship</option>
+                                <option value="Placement">Placement</option>
+                            </select>
+                        </div>
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Selection Status</label>
+                            <select name="selection_status">
+                                <option value="">Select</option>
+                                <option value="Selected">Selected</option>
+                                <option value="Offered">Offered</option>
+                                <option value="Placed">Placed</option>
+                                <option value="Shortlisted">Shortlisted</option>
+                                <option value="Not Selected">Not Selected</option>
+                                <option value="On Hold">On Hold</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pm-row">
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Offer Received</label>
+                            <select name="offer_received">
+                                <option value="">Select</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Placed</label>
+                            <select name="placed">
+                                <option value="">Select</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pm-row">
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Company</label>
+                            <input type="text" name="company" placeholder="e.g. Tech Corp Pvt Ltd">
+                        </div>
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Job Title</label>
+                            <input type="text" name="job_title" placeholder="e.g. Software Developer">
+                        </div>
+                    </div>
+                    <div class="pm-row">
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Source</label>
+                            <input type="text" name="source" placeholder="Campus Drive / Walk-in / Reference">
+                        </div>
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Date Applied</label>
+                            <input type="text" name="date_applied" placeholder="DD-MM-YYYY">
+                        </div>
+                    </div>
+                    <div class="pm-row">
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Joining Date</label>
+                            <input type="text" name="joining_date" placeholder="DD-MM-YYYY">
+                        </div>
+                        <div class="pm-cell">
+                            <label class="pm-fld-label">Current Status</label>
+                            <input type="text" name="current_status" placeholder="Working / Completed / Terminated">
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+        <div class="pm-foot">
+            <button onclick="closeAddModal()" class="pm-btn-cancel">Cancel</button>
+            <button onclick="submitPlacement()" class="pm-btn-save"><span class="pm-btn-icon">+</span> Save Record</button>
+        </div>
     </div>
 </div>
 
@@ -278,9 +606,7 @@
         document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
         document.querySelector(`.placement-tab[onclick="switchTab('${tab}')"]`).classList.add("active");
         document.getElementById(`tab-${tab}`).classList.add("active");
-        if (tab === 'view') {
-            filterPlacement();
-        }
+        if (tab === 'view') filterPlacement();
     }
 
     function filterPlacement() {
@@ -291,13 +617,7 @@
         const company = document.getElementById("companyFilter").value;
         const opportunity = document.getElementById("opportunityFilter").value;
         const placed = document.getElementById("placedFilter").value;
-
-        const params = new URLSearchParams({
-            name, course, batch, company, opportunity, center, placed,
-            page: currentPage,
-            limit: currentLimit,
-        });
-
+        const params = new URLSearchParams({ name, course, batch, company, opportunity, center, placed, page: currentPage, limit: currentLimit });
         fetch(`/filter-placement/?${params.toString()}`)
             .then(res => res.json())
             .then(data => {
@@ -307,46 +627,35 @@
                 renderPagination(currentPagination);
             })
             .catch(err => {
-                console.error("Error:", err);
-                document.getElementById("results").innerHTML =
-                    `<tr><td colspan="10" style="text-align:center;color:red;">Error loading data</td></tr>`;
+                document.getElementById("results").innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:red;">Error loading data</td></tr>`;
             });
     }
 
     function renderPagination(pagination) {
-        const paginationDiv = document.getElementById("pagination");
+        const div = document.getElementById("pagination");
         if (pagination.total_pages > 1) {
-            paginationDiv.style.display = "block";
-            document.getElementById("pageInfo").textContent =
-                `Page ${pagination.page} of ${pagination.total_pages}`;
+            div.style.display = "flex";
+            document.getElementById("pageInfo").textContent = `Page ${pagination.page} of ${pagination.total_pages}`;
             document.getElementById("prevBtn").disabled = !pagination.has_prev;
             document.getElementById("nextBtn").disabled = !pagination.has_next;
             document.getElementById("limitSelect").value = pagination.limit;
         } else {
-            paginationDiv.style.display = "none";
+            div.style.display = "none";
         }
     }
 
-    function changePage(page) {
-        currentPage = page;
-        filterPlacement();
-    }
-
-    function changeLimit(limit) {
-        currentLimit = parseInt(limit);
-        currentPage = 1;
-        filterPlacement();
-    }
+    function changePage(page) { currentPage = page; filterPlacement(); }
+    function changeLimit(limit) { currentLimit = parseInt(limit); currentPage = 1; filterPlacement(); }
 
     function renderTable(data) {
         const tbody = document.getElementById("results");
         if (!data.length) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No records found</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">No records found</td></tr>`;
             return;
         }
         tbody.innerHTML = data.map((r, i) => `<tr>
             <td>${(currentPage - 1) * currentLimit + i + 1}</td>
-            <td>${r.student_name}</td>
+            <td><strong>${r.student_name}</strong></td>
             <td>${r.course_name}</td>
             <td>${r.batch_code}</td>
             <td>${r.center_name}</td>
@@ -359,34 +668,102 @@
     }
 
     function clearFilters() {
-        ["nameFilter", "courseFilter", "batchFilter", "companyFilter",
-         "opportunityFilter", "centerFilter", "placedFilter"].forEach(id =>
+        ["nameFilter","courseFilter","batchFilter","companyFilter","opportunityFilter","centerFilter","placedFilter"].forEach(id =>
             document.getElementById(id).value = ""
         );
-        currentPage = 1;
-        currentLimit = 10;
-        filterPlacement();
+        currentPage = 1; currentLimit = 10; filterPlacement();
     }
 
-    ["nameFilter", "courseFilter", "batchFilter", "companyFilter",
-     "opportunityFilter", "centerFilter", "placedFilter"].forEach(id =>
-        document.getElementById(id).addEventListener("change", () => {
-            currentPage = 1;
-            filterPlacement();
-        })
+    ["nameFilter","courseFilter","batchFilter","companyFilter","opportunityFilter","centerFilter","placedFilter"].forEach(id =>
+        document.getElementById(id).addEventListener("change", () => { currentPage = 1; filterPlacement(); })
     );
 
     const USER_CENTER = "{{ user_center|default:'' }}";
 
     window.onload = () => {
-        currentPage = 1;
-        currentLimit = 10;
+        currentPage = 1; currentLimit = 10;
         if (USER_CENTER) {
             document.getElementById("centerFilter").value = USER_CENTER;
             document.getElementById("centerFilter").disabled = true;
         }
         filterPlacement();
     };
+
+    function openAddModal() {
+        document.getElementById('addModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    function closeAddModal() {
+        document.getElementById('addModal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    var studentDataMap = {};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var select = document.getElementById('modal-student-select');
+        fetch('/search-students-json/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                data.results.forEach(function(s) {
+                    var opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.text;
+                    select.appendChild(opt);
+                    studentDataMap[s.id] = s;
+                });
+            });
+
+        select.addEventListener('change', function() {
+            var s = studentDataMap[this.value];
+            var fields = [
+                {disp:'modal-s-name-display', hid:'modal-s-name', val:s ? s.name : ''},
+                {disp:'modal-s-roll-display', hid:'modal-s-roll', val:s ? s.roll_number : ''},
+                {disp:'modal-s-course-display', hid:'modal-s-course', val:s ? s.course_name : ''},
+                {disp:'modal-s-batch-display', hid:'modal-s-batch', val:s ? s.batch_code : ''},
+                {disp:'modal-s-center-display', hid:'modal-s-center', val:s ? s.center_name : ''},
+            ];
+            fields.forEach(function(f) {
+                document.getElementById(f.disp).textContent = f.val || '\u2014';
+                document.getElementById(f.hid).value = f.val || '';
+            });
+        });
+
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target === this) closeAddModal();
+        });
+    });
+
+    function submitPlacement() {
+        var form = document.getElementById('add-placement-form');
+        var formData = new FormData(form);
+        var data = {};
+        formData.forEach(function(value, key) {
+            if (key !== 'csrfmiddlewaretoken') data[key] = value;
+        });
+        if (!data.student || data.student === '') { alert('Please select a student first.'); return; }
+        fetch('/create-placement-ajax/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
+            body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+            if (result.success) {
+                closeAddModal();
+                form.reset();
+                ['modal-s-name-display','modal-s-roll-display','modal-s-course-display','modal-s-batch-display','modal-s-center-display'].forEach(function(id) {
+                    document.getElementById(id).textContent = '\u2014';
+                });
+                document.getElementById('modal-student-select').value = '';
+                currentPage = 1;
+                filterPlacement();
+            } else {
+                alert('Error: ' + (result.error || 'Unknown error'));
+            }
+        })
+        .catch(function() { alert('Error saving placement record'); });
+    }
 </script>
 
 {% endblock content %}

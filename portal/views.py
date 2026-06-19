@@ -1194,7 +1194,8 @@ def sample_upload(request):
 
 PLACEMENT_COLUMN_ALIASES = {
     "student name": "name",
-    "student id": "aadhaar",
+    "student id": "roll_number",
+    "roll number": "roll_number",
     "course/branch": "course_name",
     "semester/batch": "batch_code",
     "centre/campus": "center_name",
@@ -1281,9 +1282,9 @@ def upload_placement_records(request):
 
                     try:
                         student = None
-                        aadhaar_val = row_dict.get("aadhaar")
-                        if aadhaar_val:
-                            qs = studentdata.objects.filter(aadhaar=str(aadhaar_val).strip())
+                        roll_number_val = row_dict.get("roll_number")
+                        if roll_number_val:
+                            qs = studentdata.objects.filter(roll_number=str(roll_number_val).strip())
                             if user_center:
                                 qs = qs.filter(center_name=user_center)
                             student = qs.first()
@@ -1311,7 +1312,7 @@ def upload_placement_records(request):
                         # ── Match or create PlacementRecord ──
                         match_qs = PlacementRecord.objects.filter(
                             student_name__iexact=csv(row_dict.get("name")),
-                            aadhaar=csv(row_dict.get("aadhaar")),
+                            aadhaar=csv(row_dict.get("roll_number")),
                             course_name__iexact=csv(row_dict.get("course_name")),
                         )
                         if user_center:
@@ -1321,7 +1322,7 @@ def upload_placement_records(request):
                         pr_data = {
                             "student": student,
                             "student_name": csv(row_dict.get("name")),
-                            "aadhaar": csv(row_dict.get("aadhaar")),
+                            "aadhaar": csv(row_dict.get("roll_number")),
                             "course_name": csv(row_dict.get("course_name")),
                             "batch_code": csv(row_dict.get("batch_code")),
                             "center_name": user_center or csv(row_dict.get("center_name")),
@@ -1373,6 +1374,93 @@ def placement_view(request, upload_form=None):
     if upload_form is None:
         upload_form = PlacementUploadForm()
     return render(request, "placement.html", {"user_center": user_center, "upload_form": upload_form})
+
+
+@login_required(login_url="/login")
+def sample_placement_upload(request):
+    headers = [
+        "Student Name",
+        "Roll Number",
+        "Course/Branch",
+        "Semester/Batch",
+        "Centre/Campus",
+        "Opportunity Type (Internship/Placement)",
+        "Selection Status",
+        "Offer Received (Y/N)",
+        "Company/Organization",
+        "Job Title/Role",
+        "Source of Opportunity",
+        "Date Applied",
+        "Joining Date",
+        "Current Status",
+    ]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Placement Template"
+
+    col_num = 1
+    for header in headers:
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = Font(bold=True)
+        col_num += 1
+
+    ws.freeze_panes = "A2"
+
+    column_index = {}
+    idx = 1
+    for h in headers:
+        column_index[h] = idx
+        idx += 1
+
+    def add_dropdown(field_name, options_list):
+        col_num = column_index[field_name]
+        col_letter = get_column_letter(col_num)
+        formula = '"' + ",".join(options_list) + '"'
+        dv = DataValidation(type="list", formula1=formula, allow_blank=True)
+        dv.error = "Please select a value from the dropdown list."
+        dv.errorTitle = "Invalid Entry"
+        ws.add_data_validation(dv)
+        dv.add(f"{col_letter}2:{col_letter}1048576")
+
+    add_dropdown("Opportunity Type (Internship/Placement)", ["Internship", "Placement"])
+    add_dropdown("Selection Status", ["Selected", "Offered", "Placed", "Shortlisted", "Not Selected", "On Hold"])
+    add_dropdown("Offer Received (Y/N)", ["Y", "N"])
+    add_dropdown("Centre/Campus", ["inderlok", "janakpuri", "karkardooma"])
+
+    sample_row = [
+        "Aarav Sharma",
+        "NIELIT0001",
+        "Course on Computer Concepts (CCC)",
+        "Batch-2024-001",
+        "inderlok",
+        "Placement",
+        "Selected",
+        "Y",
+        "Tech Corp Pvt Ltd",
+        "Software Developer",
+        "Campus Drive",
+        "01-01-2025",
+        "15-01-2025",
+        "Working",
+    ]
+    sample_col = 1
+    for value in sample_row:
+        ws.cell(row=2, column=sample_col, value=value)
+        sample_col += 1
+
+    col = 1
+    while col <= len(headers):
+        letter = get_column_letter(col)
+        ws.column_dimensions[letter].width = 30
+        col += 1
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="placement_upload_template.xlsx"'
+    wb.save(response)
+    return response
 
 
 def placement_record_to_dict(r):
@@ -1445,3 +1533,70 @@ def filter_placement(request):
             "has_prev": page > 1,
         },
     })
+
+
+@login_required(login_url="/login")
+def search_students_json(request):
+    q = request.GET.get("q", "")
+    user_center = getattr(getattr(request.user, "profile", None), "center", None)
+    qs = studentdata.objects.filter(
+        Q(name__icontains=q) | Q(roll_number__icontains=q) | Q(aadhaar__icontains=q)
+    )
+    if user_center:
+        qs = qs.filter(center_name=user_center)
+    students = qs.all() if q else qs[:200]
+    results = [
+        {
+            "id": s.id,
+            "text": f"{s.name} ({s.roll_number or s.aadhaar})",
+            "name": s.name or "",
+            "roll_number": s.roll_number or "",
+            "course_name": s.course_name or "",
+            "batch_code": s.batch_code or "",
+            "center_name": s.center_name or "",
+        }
+        for s in students
+    ]
+    return JsonResponse({"results": results})
+
+
+@login_required(login_url="/login")
+def create_placement_ajax(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    student_id = data.get("student")
+    student = studentdata.objects.filter(id=student_id).first() if student_id else None
+
+    placed = data.get("placed") == "true" or data.get("offer_received") == "true"
+
+    user_center = getattr(getattr(request.user, "profile", None), "center", None)
+
+    pr = PlacementRecord.objects.create(
+        student=student,
+        student_name=data.get("student_name", student.name if student else ""),
+        aadhaar=data.get("aadhaar", student.roll_number if student else ""),
+        course_name=data.get("course_name", student.course_name if student else ""),
+        batch_code=data.get("batch_code", student.batch_code if student else ""),
+        center_name=user_center or data.get("center_name", student.center_name if student else ""),
+        opportunity_type=data.get("opportunity_type", ""),
+        selection_status=data.get("selection_status", ""),
+        offer_received=data.get("offer_received") == "true",
+        company=data.get("company", ""),
+        job_title=data.get("job_title", ""),
+        source=data.get("source", ""),
+        date_applied=data.get("date_applied", ""),
+        joining_date=data.get("joining_date", ""),
+        current_status=data.get("current_status", ""),
+        placed=placed,
+    )
+
+    if student:
+        student.placed = True
+        student.save()
+
+    return JsonResponse({"success": True, "id": pr.id})
