@@ -6,405 +6,139 @@
     <title>SCSPTSP — NIELIT Delhi</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; width: 100%; }
         body {
             font-family: "Inter", -apple-system, "Helvetica Neue", sans-serif;
-            background: #ffffff;
+            background: #f5f7fa;
             color: #1d1d1f;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            line-height: 1.5;
+            display: flex; width: 100%; height: 100%;
         }
-
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
+        .left {
+            flex: 1;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 48px;
-            background: rgba(255,255,255,0.96);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(0,0,0,0.06);
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 80px;
         }
-
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-
-        .nav-logo img {
-            height: 32px;
+        .left .logo {
+            height: 52px;
             width: auto;
+            margin-bottom: 20px;
         }
-
-        .nav-logo span {
+        .left h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+        .left .sub {
+            font-size: 14px;
+            color: #6e6e73;
+            margin-bottom: 32px;
+        }
+        .left input {
+            width: 100%;
+            max-width: 360px;
+            padding: 12px 14px;
+            border: 1px solid #d2d2d7;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: "Inter", sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 12px;
+            background: #fafbfc;
+            display: block;
+        }
+        .left input:focus {
+            border-color: #0066cc;
+            background: #fff;
+        }
+        .left button {
+            width: 100%;
+            max-width: 360px;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #1d1d1f;
+            color: #fff;
             font-size: 14px;
             font-weight: 600;
-            color: #1d1d1f;
-            letter-spacing: -0.01em;
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            color: #6e6e73;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: #1d1d1f;
-        }
-
-        .login-pill {
-            display: inline-block;
-            padding: 7px 20px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #ffffff;
-            background: #1d1d1f;
-            border: none;
-            border-radius: 20px;
-            text-decoration: none;
-            letter-spacing: 0.01em;
-            transition: opacity 0.2s;
+            font-family: "Inter", sans-serif;
             cursor: pointer;
+            transition: opacity 0.2s;
+            display: block;
         }
-
-        .login-pill:hover {
-            opacity: 0.8;
+        .left button:hover { opacity: 0.85; }
+        .error {
+            color: #d32f2f;
+            font-size: 13px;
+            margin-bottom: 10px;
         }
-
-        .hero {
-            min-height: 100vh;
+        .right {
+            width: 380px;
+            background: linear-gradient(135deg, #0d2137 0%, #1a3a5c 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 140px 24px 80px;
+            padding: 48px 36px;
             text-align: center;
+            color: #fff;
         }
-
-        .hero-image {
-            margin-bottom: 40px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeUp 1s ease forwards;
-        }
-
-        .hero-image img {
-            height: 80px;
+        .right img {
+            height: 64px;
             width: auto;
+            margin-bottom: 24px;
+            opacity: 0.95;
         }
-
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .hero h1 {
-            font-size: clamp(36px, 6vw, 64px);
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            line-height: 1.05;
-            color: #1d1d1f;
-            max-width: 720px;
-            margin-bottom: 20px;
-            opacity: 0;
-            transform: translateY(24px);
-            animation: fadeUp 0.8s ease 0.15s forwards;
-        }
-
-        .hero h1 em {
-            font-style: normal;
-            color: #0066cc;
-        }
-
-        .hero p {
-            font-size: clamp(16px, 1.8vw, 21px);
-            font-weight: 400;
-            color: #6e6e73;
-            max-width: 520px;
-            line-height: 1.6;
-            margin-bottom: 36px;
-            opacity: 0;
-            transform: translateY(24px);
-            animation: fadeUp 0.8s ease 0.3s forwards;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 14px;
-            flex-wrap: wrap;
-            justify-content: center;
-            opacity: 0;
-            transform: translateY(24px);
-            animation: fadeUp 0.8s ease 0.45s forwards;
-        }
-
-        .hero-cta .login-pill {
-            font-size: 15px;
-            padding: 12px 30px;
-            border-radius: 24px;
-        }
-
-        .hero-cta .outline-pill {
-            display: inline-block;
-            padding: 12px 30px;
-            font-size: 15px;
-            font-weight: 600;
-            color: #1d1d1f;
-            background: transparent;
-            border: 1.5px solid #d2d2d7;
-            border-radius: 24px;
-            text-decoration: none;
-            transition: border-color 0.2s;
-            cursor: pointer;
-        }
-
-        .hero-cta .outline-pill:hover {
-            border-color: #1d1d1f;
-        }
-
-        .section-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: #6e6e73;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 40px;
-            text-align: center;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: #e8e8ed;
-            border-radius: 18px;
-            overflow: hidden;
-            max-width: 880px;
-            margin: 0 auto 60px;
-            width: 100%;
-        }
-
-        .grid-item {
-            background: #ffffff;
-            padding: 44px 28px;
-            text-align: center;
-        }
-
-        .grid-item .num {
-            font-size: 11px;
-            font-weight: 600;
-            color: #0066cc;
-            letter-spacing: 0.05em;
-            margin-bottom: 14px;
-            display: block;
-        }
-
-        .grid-item h3 {
+        .right h2 {
             font-size: 16px;
             font-weight: 600;
-            color: #1d1d1f;
-            margin-bottom: 6px;
             letter-spacing: -0.01em;
+            margin-bottom: 6px;
         }
-
-        .grid-item p {
-            font-size: 14px;
-            color: #6e6e73;
-            line-height: 1.6;
-            max-width: 260px;
-            margin: 0 auto;
-        }
-
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 60px;
-            flex-wrap: wrap;
-            margin-bottom: 60px;
-        }
-
-        .stat {
-            text-align: center;
-        }
-
-        .stat .num {
-            font-size: 36px;
-            font-weight: 700;
-            color: #1d1d1f;
-            letter-spacing: -0.02em;
-        }
-
-        .stat .label {
+        .right p {
             font-size: 13px;
-            color: #6e6e73;
-            margin-top: 2px;
+            opacity: 0.65;
+            line-height: 1.6;
         }
-
-        .footer {
-            padding: 28px 48px;
-            border-top: 1px solid rgba(0,0,0,0.06);
-            text-align: center;
+        .right .copy {
+            margin-top: 32px;
+            font-size: 11px;
+            opacity: 0.35;
         }
-
-        .footer p {
-            font-size: 12px;
-            color: #6e6e73;
-        }
-
-        .pill-link {
-            display: inline-block;
-            padding: 8px 18px;
-            font-size: 12px;
-            font-weight: 500;
-            color: #0066cc;
-            background: #f2f5fc;
-            border-radius: 20px;
-            text-decoration: none;
-            margin-bottom: 32px;
-            transition: background 0.2s;
-        }
-
-        .pill-link:hover {
-            background: #e4eaf7;
-        }
-
-        @media (max-width: 768px) {
-            .nav {
-                padding: 14px 20px;
-            }
-
-            .nav-logo span {
-                display: none;
-            }
-
-            .hero {
-                padding: 120px 20px 60px;
-            }
-
-            .hero-image img {
-                height: 60px;
-            }
-
-            .grid {
-                grid-template-columns: 1fr;
-                border-radius: 14px;
-            }
-
-            .grid-item {
-                padding: 32px 24px;
-            }
-
-            .stats {
-                gap: 32px;
-            }
-
-            .stat .num {
-                font-size: 28px;
-            }
-
-            .footer {
-                padding: 24px 20px;
-            }
+        @media (max-width: 700px) {
+            .right { display: none; }
+            .left { padding: 40px 28px; }
+            .left input, .left button { max-width: 100%; }
         }
     </style>
 </head>
 <body>
-    <nav class="nav">
-        <a href="/" class="nav-logo">
-            <img src="/static/logo.jpeg" alt="NIELIT Logo" onerror="this.style.display='none'">
-            <span>SCSPTSP</span>
-        </a>
-        <div class="nav-links">
-            <a href="{% url 'login' %}">Sign in</a>
-            <a href="{% url 'login' %}" class="login-pill">Login</a>
-        </div>
-    </nav>
-
-    <section class="hero">
-        <div class="hero-image">
-            <img src="/static/logo.jpeg" alt="NIELIT Delhi" onerror="this.style.display='none'">
-        </div>
-
-        <h1>
-            Student data.<br>
-            <em>Simplified.</em>
-        </h1>
-
-        <p>
-            Upload, track, and manage student records across every center —<br>
-            all in one place.
-        </p>
-
-        <div class="hero-cta">
-            <a href="{% url 'login' %}" class="login-pill">Get started</a>
-            <a href="{% url 'courses' %}" class="outline-pill">Browse courses</a>
-        </div>
-
-        <div style="margin-top: 100px; width: 100%; max-width: 880px;">
-            <div class="section-title">What you can do</div>
-            <div class="grid">
-                <div class="grid-item">
-                    <span class="num">01</span>
-                    <h3>Upload &amp; manage</h3>
-                    <p>Import student data from Excel. Edit, filter, and organize records in one place.</p>
-                </div>
-                <div class="grid-item">
-                    <span class="num">02</span>
-                    <h3>Track progress</h3>
-                    <p>Monitor training, certification, and placement status across centers and sessions.</p>
-                </div>
-                <div class="grid-item">
-                    <span class="num">03</span>
-                    <h3>Placement records</h3>
-                    <p>Log internships and placements with company details, roles, and status.</p>
-                </div>
-            </div>
-        </div>
-
-        <div style="width: 100%; max-width: 600px;">
-            <div class="section-title">Program at a glance</div>
-            <div class="stats">
-                <div class="stat">
-                    <div class="num">3</div>
-                    <div class="label">Centers</div>
-                </div>
-                <div class="stat">
-                    <div class="num">6</div>
-                    <div class="label">Courses</div>
-                </div>
-                <div class="stat">
-                    <div class="num">10+</div>
-                    <div class="label">Schemes</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="footer">
-        <p>&copy; {% now "Y" %} NIELIT Delhi. All rights reserved.</p>
-    </footer>
+    <div class="left">
+        <img src="/static/logo.jpeg" alt="NIELIT" class="logo" onerror="this.style.display='none'">
+        <h1>SCSPTSP</h1>
+        <div class="sub">Student Management Portal — NIELIT Delhi</div>
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Sign in</button>
+        </form>
+    </div>
+    <div class="right">
+        
+        <h2>NIELIT Delhi</h2>
+        <p>Student data, training, certification<br>and placement tracking system</p>
+        <div class="copy">&copy; {% now "Y" %} NIELIT Delhi</div>
+    </div>
 </body>
 </html>
